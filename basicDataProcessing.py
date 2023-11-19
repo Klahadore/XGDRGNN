@@ -33,7 +33,7 @@ def load_edge_list(datafile_path, src_col, src_mapping, dst_col, dst_mapping):
     return edge_index
 
 
-def initialize_data(datafile_path, num_features=1):
+def initialize_data(datafile_path, num_features=20):
     dz_col, gene_col = "# Disease ID", "Gene ID"
     dz_mapping = load_node_mapping(datafile_path, dz_col, offset=0)
     gene_mapping = load_node_mapping(datafile_path, gene_col, offset=519)
