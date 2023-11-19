@@ -160,7 +160,7 @@ def get_ranked_edges(data_object, model, num_dz_nodes=519):
     ranked_edge_list, a full edge list ranked by the likelihood of the edge
       being a positive edge, in decreasing order
     ranked_dot_products, a list of the dot products of each edge's node
-      embeddings, ranked in decreasing order
+      embeddings, ranked in decreasing orderh
   """
     # Get dot products
     edge_dot_products = get_edge_dot_products(data_object, model, num_dz_nodes=num_dz_nodes)
