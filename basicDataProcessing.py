@@ -1,10 +1,10 @@
-import numpy as np
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
+
 import torch_geometric.transforms as T
 import torch
 import pandas as pd
+import networkx as nx
+import torch_geometric.utils as pyg_utils
+import matplotlib.pyplot as plt
 
 from torch_geometric.data import Data, download_url, extract_gz
 
@@ -51,6 +51,32 @@ def initialize_data(datafile_path, num_features=20):
 
     return data, gene_mapping, dz_mapping
 
+def visualize_graph(data, node_labels=None):
+    """
+    Visualize a PyTorch Geometric graph using NetworkX and Matplotlib.
+
+    :param data: PyTorch Geometric Data object.
+    :param node_labels: A dictionary mapping node indices to labels.
+    """
+    G = pyg_utils.to_networkx(data, to_undirected=True)
+
+    plt.figure(figsize=(12, 12))
+    pos = nx.spring_layout(G)  # positions for all nodes - can be customized
+
+    # Draw the nodes and the edges (with optional labels)
+    nx.draw_networkx_edges(G, pos, alpha=0.3, edge_color="black")
+    nx.draw_networkx_nodes(G, pos, node_size=700, node_color="skyblue", alpha=0.9)
+
+    if node_labels:
+        nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=12)
+
+    plt.title("Graph Visualization")
+    plt.show()
+
+# Assuming you have a way to create node labels from your data
+
+
+
 
 # Read data and construct Data object.
 data_object, gene_mapping, dz_mapping = initialize_data(data_path)
@@ -72,4 +98,5 @@ train_dataset, val_dataset, test_dataset = transform(data_object)
 print("Train Data:\n", train_dataset)
 print("Validation Data:\n", val_dataset)
 print("Test Data:\n", test_dataset)
-
+node_labels = {i: f'Label {i}' for i in range(train_dataset.num_nodes)}
+visualize_graph(train_dataset, node_labels="")
