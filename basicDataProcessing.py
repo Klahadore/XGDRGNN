@@ -16,7 +16,7 @@ extract_gz(download_url(url, 'data'), 'data')
 data_path = "data/DG-AssocMiner_miner-disease-gene.tsv"
 
 
-# Maps each distinct node to a unique integer index.
+# Maps each distinct node to a unique integer index.c
 def load_node_mapping(datafile_path, index_col, offset=0):
     df = pd.read_csv(datafile_path, index_col=index_col, sep="\t")
     mapping = {index_id: i + offset for i, index_id in enumerate(df.index.unique())}
