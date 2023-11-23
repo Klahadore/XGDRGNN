@@ -1,5 +1,6 @@
 import torch
 from torch_geometric.data import Data, download_url, extract_zip
+from torch_geometric import utils
 import networkx as nx
 import json
 from torch_geometric.data import HeteroData
@@ -80,8 +81,34 @@ def build_features(mapping, embedding_function, embedding_dim):
         x = torch.cat((x, embedding), dim=0)
     return x
 
-def build_edge_indices(gene_mapping, disease_mapping, GDA_mapping):
-    edge_indices()
 
-map1, map2 = build_index_mappings(VALPATH)
-print(build_features(map1, gene_embedding, 20))
+def build_edge_indices(gene_mapping, disease_mapping, GDA_mapping):
+    """
+    Builds edge indices tensor given gene mapping, disease mapping, and GDA mapping
+
+    """
+    edge_indices = torch.empty(2, 0, dtype=torch.float32)
+    for key, value in GDA_mapping.items():
+        for i in GDA_mapping[key]:
+            column = torch.tensor([[gene_mapping[key]], [disease_mapping[i]]], dtype=torch.float32)
+            edge_indices = torch.cat((edge_indices, column), dim=1)
+    return edge_indices
+
+
+gene_mapping, disease_mapping = build_index_mappings(VALPATH)
+
+GDA_mapping = build_GDA_mapping(VALPATH)
+#
+x_gene = build_features(gene_mapping, gene_embedding, 20)
+x_disease = build_features(disease_mapping, disease_embedding, 20)
+#
+GDA_edge_indices = build_edge_indices(gene_mapping, disease_mapping, GDA_mapping)
+
+val_data = HeteroData()
+val_data["gene"].x = x_gene
+val_data["disease"].x = x_disease
+val_data["gene", "associated_with", "disease"].edge_index = GDA_edge_indices
+print(val_data)
+
+graph = utils.to_networkx(val_data)
+nx.draw(graph)
