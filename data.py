@@ -15,13 +15,16 @@ valPath = "data/TBGA/TBGA_val.txt"
 
 # returns mapping of gene id to a tuple containing disease id and relationship
 def build_GDA_mapping(path):
-    mapping = {}
+    id_to_gene_mapping = {}
+    id_to_disease_mapping = {}
+    counter = 0
     with open(path) as lines:
         for line in lines:
             data = json.loads(line)
-            mapping[data["h"]["id"]] = (data["t"]["id"], data["relation"])
+            id_to_gene_mapping[counter]
+            id_mapping[data["h"]["id"]] = (data["t"]["id"], data["relation"])
 
-    return mapping
+    return id_mapping
 
 def build_graph(mapping):
     data = HeteroData()
