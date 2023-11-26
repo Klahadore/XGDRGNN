@@ -1,28 +1,34 @@
 import torch
-from torch_geometric.nn import GATConv, Linear, to_hetero
+from torch_geometric.nn import GATConv, Linear, to_hetero, GCNConv
 from data import val_data
-
+import torch.nn.functional as F
 from torch import optimizer
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-class GAT(torch.nn.Module):
-    def __init__(self, hidden_channels, out_channels):
+class GCN(torch.nn.Module):
+    def __init__(self):
         super().__init__()
-        self.con1 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
-        self.lin1 = Linear(-1, hidden_channels)
-        self.conv2 = GATConv((-1, -1), out_channels, add_self_loops=False)
-        self.lni2 = Linear(-1, out_channels)
+        self.conv1 = GCNConv(dataset.num_node_features, 16)
+        self.conv2 = GCNConv(16, dataset.num_classes)
 
-    def forward(self, x, edge_index):
-        x = self.conv1(x, edge_index) + self.lin1(x)
-        x = x.relu()
-        x = self.conv2(x, edge_index) + self.lin2(x)
-        return x
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+        return F.log_softmax(x, dim=1)
 
+model = GCN.to(device)
+data = val_data.to(device)
+optimizer = torch.optim.Adam(model.parameters(),lr=0.01, weight_decay=5e-4)
 
-model = GAT(hidden_channels=64, out_channels=val_data.num_channels)
-model = to_hetero(model, val_data.metadata(), aggr='sum')
-
-
+model.train()
+for epoch in range(200):
+    optimizer.zero_grad()
+    out = model(data)
+    loss = F.nll_loss(out[])
+    loss.backward()
+    optimizer.step()
 

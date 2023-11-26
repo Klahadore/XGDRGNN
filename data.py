@@ -50,7 +50,6 @@ def build_index_mappings(path):
             add_index_to_map(data["h"]["id"], counter, gene_to_index)
             add_index_to_map(data["t"]["id"], counter, disease_to_index)
             counter += 1
-    print(counter)
 
     return gene_to_index, disease_to_index
 
@@ -95,20 +94,58 @@ def build_edge_indices(gene_mapping, disease_mapping, GDA_mapping):
     return edge_indices
 
 
-gene_mapping, disease_mapping = build_index_mappings(VALPATH)
+def make_dataset(path):
+    gene_mapping, disease_mapping = build_index_mappings(path)
+    GDA_mapping = build_GDA_mapping(path)
 
-GDA_mapping = build_GDA_mapping(VALPATH)
+    x_gene = build_features(gene_mapping, gene_embedding, 20)
+    x_disease = build_features(disease_mapping, disease_embedding, 20)
+    #
+    GDA_edge_indices = build_edge_indices(gene_mapping, disease_mapping, GDA_mapping)
+
+    dataset = HeteroData()
+    dataset["gene"].x = x_gene
+    dataset["disease"].x = x_disease
+    dataset["gene", "associated_with", "disease"].edge_index = GDA_edge_indices
+
+    return dataset
+
+
+"""
+    These are currently seperate datasets, but we would like to combine them
+    into a single dataset and then use masks to mask out different datasets for 
+    training, testing, and evaluating
+"""
+train_dataset = make_dataset(TRAINPATH)
+test_dataset = make_dataset(TESTPATH)
+val_dataset = make_dataset(VALPATH)
+
+# dataset = HeteroData()
 #
-x_gene = build_features(gene_mapping, gene_embedding, 20)
-x_disease = build_features(disease_mapping, disease_embedding, 20)
+# dataset["gene"].x = torch.cat([
+#     train_dataset["gene"].x,
+#     test_dataset["gene"].x,
+#     val_dataset["gene"].x
+# ], dim=0)
 #
-GDA_edge_indices = build_edge_indices(gene_mapping, disease_mapping, GDA_mapping)
+# dataset["disease"].x = torch.cat([
+#     train_dataset["disease"].x,
+#     test_dataset["disease"].x,
+#     val_dataset["disease"].x
+# ], dim=0)
+#
+# dataset["gene", "associated_with", "disease"] = torch.cat([
+#     train_dataset["gene", "associated_with", "disease"].edge_index,
+#     test_dataset["gene", "associated_with", "disease"].edge_index,
+#     val_dataset["gene", "associated_with", "disease"].edge_index,
+# ], dim=1)
 
-val_data = HeteroData()
-val_data["gene"].x = x_gene
-val_data["disease"].x = x_disease
-val_data["gene", "associated_with", "disease"].edge_index = GDA_edge_indices
-print(val_data)
+# num_nodes_gene = dataset["gene"].num_nodes
+# num_nodes_disease = dataset["disease"].num_nodes
+# num_edges_gene_disease = dataset["gene"]["associated_with"]["disease"].num_edges
 
-graph = utils.to_networkx(val_data)
-nx.draw(graph)
+# train_mask = torch.zeros(num_nodes_disease + num_nodes_gene, dtype=torch.bool)
+# test_mask = torch.zeros(num_nodes_disease + num_nodes_gene, dtype= torch.bool)
+# val_mask = torch.zeros(num_nodes_disease + num_nodes_gene, dtype = torch.bool)
+
+# print(dataset)
