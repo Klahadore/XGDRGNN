@@ -20,7 +20,7 @@ def disease_embedding(id):
                 id_value = columns[0]
                 sentence = columns[2]
                 sentences_tot.append(sentence)
-    embeddings = model.encode(sentences.tot, show_progress_bar=True)
+    embeddings = model.encode(sentences_tot, show_progress_bar=True)
 
     specific_embedding = embeddings[id]
         
