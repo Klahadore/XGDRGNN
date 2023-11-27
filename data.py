@@ -7,6 +7,7 @@ from torch_geometric.data import HeteroData
 from collections import OrderedDict
 from embeddings import *
 
+
 TGBAURL = "https://zenodo.org/records/5911097/files/TBGA.zip?download=1"
 
 extract_zip(download_url(TGBAURL, 'data'), 'data')
@@ -86,10 +87,10 @@ def build_edge_indices(gene_mapping, disease_mapping, GDA_mapping):
     Builds edge indices tensor given gene mapping, disease mapping, and GDA mapping
 
     """
-    edge_indices = torch.empty(2, 0, dtype=torch.float32)
+    edge_indices = torch.empty(2, 0, dtype=torch.int64)
     for key, value in GDA_mapping.items():
         for i in GDA_mapping[key]:
-            column = torch.tensor([[gene_mapping[key]], [disease_mapping[i]]], dtype=torch.float32)
+            column = torch.tensor([[gene_mapping[key]], [disease_mapping[i]]], dtype=torch.int64)
             edge_indices = torch.cat((edge_indices, column), dim=1)
     return edge_indices
 
