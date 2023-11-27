@@ -96,23 +96,32 @@ def build_edge_indices(gene_mapping, disease_mapping, GDA_mapping):
 
 def make_dataset(path):
     gene_mapping, disease_mapping = build_index_mappings(path)
+
+    num_disease = len(disease_mapping)
+    num_gene = len(gene_mapping)
+
+    # offset disease indices by number of genes
+    for key in disease_mapping:
+        disease_mapping[key] += num_gene
+
     GDA_mapping = build_GDA_mapping(path)
 
     x_gene = build_features(gene_mapping, gene_embedding, 20)
     x_disease = build_features(disease_mapping, disease_embedding, 20)
-    #
+
+    # concatenate x_gene and x_disease tensors
+    x = torch.cat((x_gene, x_disease), dim=0)
+
     GDA_edge_indices = build_edge_indices(gene_mapping, disease_mapping, GDA_mapping)
 
-    dataset = HeteroData()
-    dataset["gene"].x = x_gene
-    dataset["disease"].x = x_disease
-    dataset["gene", "associated_with", "disease"].edge_index = GDA_edge_indices
+    # build pytorch geometric homogenous data object
+    dataset = Data(x=x, edge_index=GDA_edge_indices, num_nodes=num_disease + num_gene)
 
     return dataset
 
 
 """
-    These are currently seperate datasets, but we would like to combine them
+    These are currently separate datasets, but we would like to combine them
     into a single dataset and then use masks to mask out different datasets for 
     training, testing, and evaluating
 """
@@ -120,6 +129,7 @@ train_dataset = make_dataset(TRAINPATH)
 test_dataset = make_dataset(TESTPATH)
 val_dataset = make_dataset(VALPATH)
 
+print(train_dataset)
 # dataset = HeteroData()
 #
 # dataset["gene"].x = torch.cat([
