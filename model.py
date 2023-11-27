@@ -44,4 +44,3 @@ def train():
 
 
 for epoch in range(200):
-    print(train())
