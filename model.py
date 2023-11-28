@@ -1,17 +1,18 @@
 import torch
 from torch_geometric.nn import GATConv, Linear, to_hetero, GCNConv, GAE
-from data import train_dataset
+from data import train_dataset, test_dataset
 import torch.nn.functional as F
 from torch.optim import optimizer
 
-# for model debug
-from torch_geometric.datasets import Planetoid
+from visualize import visualize_graph
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-train_dataset = train_dataset.to_homogeneous()
+
 # train_dataset = Planetoid(root='/tmp/Cora', name='Cora')
 
 print(train_dataset)
+
+
 class GCN(torch.nn.Module):
     def __init__(self, hidden_channels, out_channels):
         super().__init__()
@@ -44,3 +45,4 @@ def train():
 
 
 for epoch in range(200):
+    print(train())
