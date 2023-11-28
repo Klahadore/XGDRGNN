@@ -7,7 +7,6 @@ from torch_geometric.data import HeteroData
 from collections import OrderedDict
 from embeddings import *
 
-
 TGBAURL = "https://zenodo.org/records/5911097/files/TBGA.zip?download=1"
 
 extract_zip(download_url(TGBAURL, 'data'), 'data')
@@ -18,11 +17,6 @@ VALPATH = "data/TBGA/TBGA_val.txt"
 
 
 # helper function to assign unique ids to all elements because some elements might have multiple connections
-def add_index_to_map(key, value, mapping):
-    if key in mapping:
-        pass
-    else:
-        mapping[key] = value
 
 
 # helper function to assign gene to an array of disease associations
@@ -44,13 +38,25 @@ def build_index_mappings(path):
     gene_to_index = {}
     disease_to_index = {}
 
-    counter = 0
     with open(path) as lines:
+        # First pass to index genes
+        counter = 0
         for line in lines:
             data = json.loads(line)
-            add_index_to_map(data["h"]["id"], counter, gene_to_index)
-            add_index_to_map(data["t"]["id"], counter, disease_to_index)
-            counter += 1
+            if data["h"]["id"] not in gene_to_index:
+                gene_to_index[data["h"]["id"]] = counter
+                counter += 1
+
+        # Reset the read position of the file
+        lines.seek(0)
+
+        # Second pass to index diseases
+        counter = 0
+        for line in lines:
+            data = json.loads(line)
+            if data["t"]["id"] not in disease_to_index:
+                disease_to_index[data["t"]["id"]] = counter
+                counter += 1
 
     return gene_to_index, disease_to_index
 
@@ -64,6 +70,7 @@ def build_GDA_mapping(path):
         for line in lines:
             data = json.loads(line)
             add_GDA_to_map(data["h"]["id"], data["t"]["id"], gene_to_disease)
+    # print(gene_to_disease[1])
     return gene_to_disease
 
 
@@ -92,6 +99,7 @@ def build_edge_indices(gene_mapping, disease_mapping, GDA_mapping):
         for i in GDA_mapping[key]:
             column = torch.tensor([[gene_mapping[key]], [disease_mapping[i]]], dtype=torch.int64)
             edge_indices = torch.cat((edge_indices, column), dim=1)
+    # print(edge_indices)
     return edge_indices
 
 
@@ -130,7 +138,8 @@ train_dataset = make_dataset(TRAINPATH)
 test_dataset = make_dataset(TESTPATH)
 val_dataset = make_dataset(VALPATH)
 
-print(train_dataset)
+
+
 # dataset = HeteroData()
 #
 # dataset["gene"].x = torch.cat([
