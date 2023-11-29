@@ -126,7 +126,7 @@ def make_dataset(path):
     # build pytorch geometric homogenous data object
     dataset = Data(x=x, edge_index=GDA_edge_indices, num_nodes=num_disease + num_gene)
 
-    return dataset
+    return dataset, num_gene
 
 
 """
@@ -134,9 +134,9 @@ def make_dataset(path):
     into a single dataset and then use masks to mask out different datasets for 
     training, testing, and evaluating
 """
-train_dataset = make_dataset(TRAINPATH)
-test_dataset = make_dataset(TESTPATH)
-val_dataset = make_dataset(VALPATH)
+train_dataset, num_gene = make_dataset(TRAINPATH)
+# test_dataset, num_gene = make_dataset(TESTPATH)
+# val_dataset = make_dataset(VALPATH)
 
 
 
