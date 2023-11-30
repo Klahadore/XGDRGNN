@@ -3,7 +3,7 @@ from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModel
 
 def gene_embedding(id):
-    return torch.ones(20)
+    return torch.ones(20, dtype=torch.float32)
 
 def disease_embedding(id):
 #     SNAP_dataset = "D-DoMiner_miner-diseaseDOID.tsv.gz"
@@ -26,3 +26,16 @@ def disease_embedding(id):
         
         
     return torch.ones(20, dtype=torch.float32)
+
+def chemical_embedding(id):
+    return torch.ones(20, dtype=torch.float32)
+
+def phe_embedding(id):
+    return torch.ones(20, dtype=torch.float32)
+
+def mutation_embedding(id):
+    return torch.ones(20, dtype=torch.float32)
+
+def pathway_embedding(id):
+    return torch.ones(20, dtype=torch.float32)
+
