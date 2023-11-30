@@ -80,6 +80,7 @@ build_index_map_of_keys("gene_phe.json", gene_to_index)
 build_index_map_of_keys("gene_pathway.json", gene_to_index)
 build_index_map_of_keys("gene_chemical.json", gene_to_index)
 build_index_map_of_keys("gene_gene.json", gene_to_index)
+build_index_map_of_values("gene_gene.json", gene_to_index)
 build_index_map_of_values("disease_gene.json", gene_to_index)
 
 build_index_map_of_keys("disease_gene.json", disease_to_index)
@@ -88,6 +89,7 @@ build_index_map_of_keys("disease_phe.json", disease_to_index)
 build_index_map_of_keys("disease_pathway.json", disease_to_index)
 build_index_map_of_keys("disease_chemical.json", disease_to_index)
 build_index_map_of_keys("disease_disease.json", disease_to_index)
+build_index_map_of_values("disease_disease.json", disease_to_index)
 build_index_map_of_values("gene_disease.json", disease_to_index)
 
 build_index_map_of_values("disease_chemical.json", chemical_to_index)
@@ -151,7 +153,7 @@ dataset['gene', 'associated_with', 'mutation'].edge_index = create_edge_indices(
 dataset['gene', 'associated_with', 'pathway'].edge_index = create_edge_indices(build_file_mapping("gene_pathway.json"),
                                                                                 gene_to_index, pathway_to_index)
 dataset['gene', 'associated_with', 'gene'].edge_index = create_edge_indices(build_file_mapping("gene_gene.json"),
-                                                                                gene_to_index, gene_to_index)
+                                                                                 gene_to_index, gene_to_index)
 dataset['disease', 'associated_with', 'chemical'].edge_index = create_edge_indices(build_file_mapping("disease_chemical.json"),
                                                                                     disease_to_index, chemical_to_index)
 dataset['disease', 'associated_with', 'phe'].edge_index = create_edge_indices(build_file_mapping("disease_phe.json"),
@@ -161,7 +163,7 @@ dataset['disease', 'associated_with', 'mutation'].edge_index = create_edge_indic
 dataset['disease', 'associated_with', 'pathway'].edge_index = create_edge_indices(build_file_mapping("disease_pathway.json"),
                                                                                     disease_to_index, pathway_to_index)
 dataset['disease', 'associated_with', 'disease'].edge_index = create_edge_indices(build_file_mapping("disease_disease.json"),
-                                                                                    disease_to_index, disease_to_index)
+                                                                                  disease_to_index, disease_to_index)
 
 
 print(dataset)
