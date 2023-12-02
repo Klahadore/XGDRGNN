@@ -5,27 +5,45 @@ from transformers import AutoTokenizer, AutoModel
 def gene_embedding(id):
     return torch.ones(20, dtype=torch.float32)
 
+import torch
+import requests
+import json
+from bs4 import BeautifulSoup
+from sentence_transformers import SentenceTransformer
+#from transformers import AutoTokenizer, AutoModel
+
+def gene_embedding(id):
+    return torch.ones(20)
+
+def convert_string(string):
+    newlist = list(string.split(" "))
+    return newlist
+
+#input disease id, return embedding based off definiton from API of NCBI
 def disease_embedding(id):
-#     SNAP_dataset = "D-DoMiner_miner-diseaseDOID.tsv.gz"
-#     extract_gz(download_url(SNAP_dataset, 'data'), 'data')
-#
-#     PATH_TO_SNAP = "data/D-DoMiner_miner-diseaseDOID.tsv"
-#
-#     model = SentenceTransformer('BAAI/bge-small-en-v1.5')
-#     sentences_tot = []
-#     with open(PATH_TO_SNAP, 'r') as file:
-#         for line in file:
-#             columns = line.strip().split('\t')
-#             if len(columns) >= 3:
-#                 id_value = columns[0]
-#                 sentence = columns[2]
-#                 sentences_tot.append(sentence)
-#     embeddings = model.encode(sentences_tot, show_progress_bar=True)
-#
-#     specific_embedding = embeddings[id]
-        
-        
+    try:
+        url = f'https://id.nlm.nih.gov/mesh/{id}.json'
+
+        response = requests.get(url)
+    
+        if response.status_code == 200:
+            y = json.loads(response.content)
+            cat = y["scopeNote"]["@value"]
+
+        else:
+            print("Failed")
+            return None
+    except requests.RequestException as e:
+        print(f"Request failed: {e}")
+        return None
+
+    print(convert_string(cat))
+    model = SentenceTransformer('BAAI/bge-small-en-v1.5')
+    embeddings = model.encode(cat, show_progress_bar=False)
+    print(embeddings)
     return torch.ones(20, dtype=torch.float32)
+
+print(disease_embedding("M0002972"))
 
 def chemical_embedding(id):
     return torch.ones(20, dtype=torch.float32)
