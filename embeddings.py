@@ -1,11 +1,4 @@
 import torch
-from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModel
-
-def gene_embedding(id):
-    return torch.ones(20, dtype=torch.float32)
-
-import torch
 import requests
 import json
 from bs4 import BeautifulSoup
@@ -13,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 #from transformers import AutoTokenizer, AutoModel
 
 def gene_embedding(id):
-    return torch.ones(20)
+    return torch.ones(20, dtype=torch.float32)
 
 def convert_string(string):
     newlist = list(string.split(" "))
@@ -21,6 +14,38 @@ def convert_string(string):
 
 #input disease id, return embedding based off definiton from API of NCBI
 def disease_embedding(id):
+    if id[0] == "D":
+        try:
+            url = f'https://id.nlm.nih.gov/mesh/{id}.json'
+            response = requests.get(url)
+    
+            if response.status_code == 200:
+                y = json.loads(response.content)
+                search = y["preferedConcept"]
+                m_spot = search.find("M")
+                cat = search[m_spot, -2]
+                try:
+                    url = f'https://id.nlm.nih.gov/mesh/{cat}.json'
+                    response = requests.get(url)
+    
+                    if response.status_code == 200:
+                        new_y = json.loads(response.content)
+                        dog = new_y["scopeNote"]["@value"]
+
+                    else:
+                        print("Failed")
+                        return None
+                except requests.RequestException as g:
+                    print(f"Request failed: {g}")
+                    return None
+
+            else:
+                print("Failed")
+                return None
+        except requests.RequestException as e:
+            print(f"Request failed: {e}")
+            return None
+        
     try:
         url = f'https://id.nlm.nih.gov/mesh/{id}.json'
 
