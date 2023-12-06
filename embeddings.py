@@ -21,16 +21,14 @@ def disease_embedding(id):
     
             if response.status_code == 200:
                 y = json.loads(response.content)
-                search = y["preferedConcept"]
-                m_spot = search.find("M")
-                cat = search[m_spot, -2]
+                search = y["preferredConcept"]
                 try:
-                    url = f'https://id.nlm.nih.gov/mesh/{cat}.json'
+                    url = search
                     response = requests.get(url)
     
                     if response.status_code == 200:
                         new_y = json.loads(response.content)
-                        dog = new_y["scopeNote"]["@value"]
+                        cat = new_y["scopeNote"]["@value"]
 
                     else:
                         print("Failed")
@@ -46,29 +44,29 @@ def disease_embedding(id):
             print(f"Request failed: {e}")
             return None
         
-    try:
-        url = f'https://id.nlm.nih.gov/mesh/{id}.json'
+    else:
+        try:
+            url = f'https://id.nlm.nih.gov/mesh/{id}.json'
+            response = requests.get(url)
+        
+            if response.status_code == 200:
+                y = json.loads(response.content)
+                cat = y["scopeNote"]["@value"]
 
-        response = requests.get(url)
-    
-        if response.status_code == 200:
-            y = json.loads(response.content)
-            cat = y["scopeNote"]["@value"]
-
-        else:
-            print("Failed")
+            else:
+                print("Failed")
+                return None
+        except requests.RequestException as e:
+            print(f"Request failed: {e}")
             return None
-    except requests.RequestException as e:
-        print(f"Request failed: {e}")
-        return None
 
     print(convert_string(cat))
     model = SentenceTransformer('BAAI/bge-small-en-v1.5')
     embeddings = model.encode(cat, show_progress_bar=False)
     print(embeddings)
-    return torch.ones(20, dtype=torch.float32)
+    return embeddings
 
-print(disease_embedding("M0002972"))
+print(disease_embedding("D005886"))
 
 def chemical_embedding(id):
     return torch.ones(20, dtype=torch.float32)
