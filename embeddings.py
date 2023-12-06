@@ -1,9 +1,11 @@
 import torch
 import requests
 import json
-from bs4 import BeautifulSoup
 from sentence_transformers import SentenceTransformer
-#from transformers import AutoTokenizer, AutoModel
+
+
+def gene_embedding(id):
+    return torch.ones(20, dtype=torch.float32)
 
 def gene_embedding(id):
     return torch.ones(20, dtype=torch.float32)
@@ -22,51 +24,52 @@ def disease_embedding(id):
             if response.status_code == 200:
                 y = json.loads(response.content)
                 search = y["preferredConcept"]
+
                 try:
-                    url = search
+                    url = search + ".json"
                     response = requests.get(url)
     
                     if response.status_code == 200:
-                        new_y = json.loads(response.content)
-                        cat = new_y["scopeNote"]["@value"]
-
+                        y = json.loads(response.content)
+                        cat = y["scopeNote"]["@value"]
+    
                     else:
                         print("Failed")
                         return None
                 except requests.RequestException as g:
                     print(f"Request failed: {g}")
                     return None
-
+    
             else:
                 print("Failed")
                 return None
         except requests.RequestException as e:
             print(f"Request failed: {e}")
             return None
-        
     else:
         try:
             url = f'https://id.nlm.nih.gov/mesh/{id}.json'
+        
             response = requests.get(url)
         
             if response.status_code == 200:
                 y = json.loads(response.content)
                 cat = y["scopeNote"]["@value"]
-
+        
             else:
                 print("Failed")
                 return None
         except requests.RequestException as e:
             print(f"Request failed: {e}")
             return None
-
+    
     print(convert_string(cat))
     model = SentenceTransformer('BAAI/bge-small-en-v1.5')
     embeddings = model.encode(cat, show_progress_bar=False)
     print(embeddings)
     return embeddings
 
-print(disease_embedding("D005886"))
+print(disease_embedding("D019957"))
 
 def chemical_embedding(id):
     return torch.ones(20, dtype=torch.float32)
@@ -79,4 +82,3 @@ def mutation_embedding(id):
 
 def pathway_embedding(id):
     return torch.ones(20, dtype=torch.float32)
-
