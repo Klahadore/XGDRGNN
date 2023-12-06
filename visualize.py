@@ -4,6 +4,7 @@ import torch
 from sklearn.manifold import TSNE
 
 
+@torch.no_grad()
 def visualize_graph(data):
     G = nx.Graph()
 
@@ -25,22 +26,31 @@ def visualize_graph(data):
     plt.show()
 
 
-def visualize_emb(embeddings, num_genes):
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import torch
+
+@torch.no_grad()
+def visualize_emb(gene_embeddings, disease_embeddings):
+    # Concatenate gene and disease embeddings
+    all_embeddings = torch.cat((gene_embeddings, disease_embeddings), dim=0)
+
     # Project embeddings to 2D space using t-SNE
     tsne = TSNE(n_components=2, random_state=69)
-    embeddings_2d = tsne.fit_transform(embeddings.cpu().numpy())
-
-    # Determine node types based on the index
-    node_types = ['gene' if i < num_genes else 'disease' for i in range(embeddings.shape[0])]
+    embeddings_2d = tsne.fit_transform(all_embeddings.cpu().numpy())
 
     # Plotting
     plt.figure(figsize=(10, 8))
-    for node_type in set(node_types):
-        indices = [i for i, t in enumerate(node_types) if t == node_type]
-        plt.scatter(embeddings_2d[indices, 0], embeddings_2d[indices, 1], label=node_type)
+
+    # Plot gene embeddings
+    num_genes = gene_embeddings.shape[0]
+    plt.scatter(embeddings_2d[:num_genes, 0], embeddings_2d[:num_genes, 1], label='gene')
+
+    # Plot disease embeddings
+    plt.scatter(embeddings_2d[num_genes:, 0], embeddings_2d[num_genes:, 1], label='disease')
 
     plt.legend()
     plt.xlabel('TSNE Component 1')
     plt.ylabel('TSNE Component 2')
-    plt.title('Node Embeddings Visualization')
+    plt.title('Gene and Disease Embeddings Visualization')
     plt.show()
