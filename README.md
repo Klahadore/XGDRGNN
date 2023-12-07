@@ -1,4 +1,4 @@
 # XGDRGNN
  
-Explainable Gene Disease Discovery Graph Attention Network
+Discovering Gene Disease Relationships Using Explainable Heterogenous Graph Attention Network
 
