@@ -160,6 +160,19 @@ def build_dataset():
         build_file_mapping("disease_disease.json"),
         disease_to_index, disease_to_index)
 
+    dataset['gene', 'gene_disease', 'disease'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['gene', 'gene_chemical', 'chemical'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['gene', 'gene_phe', 'phe'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['gene', 'gene_mutation', 'mutation'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['gene', 'gene_pathway', 'pathway'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['gene', 'gene_gene', 'gene'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['disease', 'disease_chemical', 'chemical'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['disease', 'disease_phe', 'phe'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['disease', 'disease_mutation', 'mutation'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['disease', 'disease_pathway', 'pathway'].edge_attr = torch.ones(20, dtype=torch.float32)
+    dataset['disease', 'disease_disease', 'disease'].edge_attr = torch.ones(20, dtype=torch.float32)
+
+    print(dataset.metadata())
     return dataset
 
 
@@ -204,17 +217,17 @@ transform = T.RandomLinkSplit(
 train_dataset, val_dataset, test_dataset = transform(dataset)
 
 
-
-print(train_dataset.node_types)
-print(train_dataset.edge_types)
-print(train_dataset["phe"].x)
-
-print(len(train_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
-print(len(test_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
-print(len(val_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
-
-print(train_dataset)
 #
+# print(train_dataset.node_types)
+# print(train_dataset.edge_types)
+# print(train_dataset["phe"].x)
+#
+# print(len(train_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
+# print(len(test_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
+# print(len(val_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
+#
+# print(train_dataset)
+# #
 # for edge_type in dataset.metadata()[1]:
 #     top, middle , bottom = edge_type
 #     edge_indices = dataset[top, middle, bottom].edge_index

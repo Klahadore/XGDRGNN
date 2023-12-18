@@ -23,7 +23,7 @@ def disease_embedding(id):
     #
     #         if response.status_code == 200:
     #             y = json.loads(response.content)
-    #             search = y["preferedConcept"]
+    #             search = y["preferredConcept"]
     #             m_spot = search.find("M")
     #             cat = search[m_spot, -2]
     #             try:
@@ -67,11 +67,12 @@ def disease_embedding(id):
     # print(convert_string(cat))
     # model = SentenceTransformer('BAAI/bge-small-en-v1.5')
     # embeddings = model.encode(cat, show_progress_bar=False)
-    # print(embeddings)
+    # print(type(embeddings))
+    # print(len(embeddings))
 
     return torch.ones(20, dtype=torch.float32)
 #
-# print(disease_embedding("D011782"))
+print(disease_embedding("D012162"))
 
 def chemical_embedding(id):
     return torch.ones(20, dtype=torch.float32)

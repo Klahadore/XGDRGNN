@@ -1,5 +1,6 @@
 import torch
-from torch_geometric.nn import Linear, to_hetero, SAGEConv
+from torch_geometric.nn import Linear, to_hetero, SAGEConv, summary
+
 from torch_geometric.data import HeteroData
 import torch.nn.functional as F
 
@@ -49,8 +50,8 @@ class ModelOne(torch.nn.Module):
         return self.decoder(z_dict, edge_label_index), z_dict
 
 
-
 if __name__ == "__main__":
+
     model = ModelOne(hidden_channels=20).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
