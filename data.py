@@ -13,17 +13,12 @@ from torch_geometric import transforms as T
 
 from embeddings import *
 
-URL = "https://drive.google.com/drive/folders/1sfBElzOJA8RSrnUXE1AsxY8tzASakXIl"
 
 # extract_zip(download_url(URL, 'data'), 'data')
 
 FOLDER_PATH = "data/Gene_Disease_Network"
 
 pickled_data_path = "data/pickled_data.pickle"
-
-"""
-    Check if pickled data exists and is not empty
-"""
 
 
 def build_file_mapping(filename):
@@ -79,6 +74,28 @@ def create_edge_indices(file_mapping, index_map_1, index_map_2):
             current_index += 1
 
     return edge_indices
+
+def generate_edge_type_map(metadata):
+    mapping = {}
+    counter = 0
+    for i in metadata[1]:
+        if i not in mapping.keys():
+            mapping[i] = counter
+            counter += 1
+    inv_map = {v: k for k, v in mapping.items()}
+    return inv_map
+
+
+def generate_new_edge_attr_tensor(edge_type_mapping, edge_type, het_dataset):
+    edge_attrs = []
+    for i in edge_type.tolist():
+        src, middle, dst = edge_type_mapping[i]
+        if "rev" in middle:
+            edge_attrs.append(het_dataset.edge_attr_dict[(dst, middle[4:], src)])
+
+        else:
+            edge_attrs.append(het_dataset.edge_attr_dict[edge_type_mapping[i]])
+    return torch.stack(edge_attrs)
 
 
 def build_dataset():
@@ -172,7 +189,7 @@ def build_dataset():
     dataset['disease', 'disease_pathway', 'pathway'].edge_attr = torch.ones(20, dtype=torch.float32)
     dataset['disease', 'disease_disease', 'disease'].edge_attr = torch.ones(20, dtype=torch.float32)
 
-    print(dataset.metadata())
+
     return dataset
 
 
@@ -217,27 +234,45 @@ transform = T.RandomLinkSplit(
 train_dataset, val_dataset, test_dataset = transform(dataset)
 
 
-#
-# print(train_dataset.node_types)
-# print(train_dataset.edge_types)
-# print(train_dataset["phe"].x)
-#
-# print(len(train_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
-# print(len(test_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
-# print(len(val_dataset["gene", "gene_disease", "disease"].edge_label_index[0]))
-#
-# print(train_dataset)
-# #
-# for edge_type in dataset.metadata()[1]:
-#     top, middle , bottom = edge_type
-#     edge_indices = dataset[top, middle, bottom].edge_index
-#     for top_index in edge_indices[0]:
-#         if top_index >= len(dataset[top].x):
-#             print(top)
-#     for bottom_index in edge_indices[1]:
-#         if bottom_index >= len(dataset[bottom].x):
-#             print(bottom)
-#     print(f"just completed {top} and {bottom} for {edge_type}")
+def build_homo_dataset(hetero_dataset, name):
+    new_dataset = hetero_dataset.to_homogeneous()
 
-print(train_dataset["gene", "gene_disease", "disease"].edge_label_index)
-print(train_dataset["gene", "disease"].edge_label)
+
+    mapping = generate_edge_type_map(hetero_dataset.metadata())
+
+    new_dataset.edge_attr = generate_new_edge_attr_tensor(mapping, new_dataset.edge_type, hetero_dataset)
+
+    with open(f"data/{name}.pickle", 'wb') as file:
+        pickle.dump(new_dataset, file)
+    print("successfully built homogenous dataset and dumped pickled file at" + f"data/{name}.pickle")
+    return new_dataset
+
+
+new_train_dataset = None
+new_val_dataset = None
+new_test_dataset = None
+
+if not os.path.exists("data/new_train_dataset.pickle"):
+    build_homo_dataset(train_dataset, "new_train_dataset")
+    print("built new_train_dataset")
+with open("data/new_train_dataset.pickle", "rb") as file:
+    new_train_dataset = pickle.load(file)
+    print("loaded new_train_dataset")
+
+if not os.path.exists("data/new_val_dataset.pickle"):
+    build_homo_dataset(val_dataset, "new_val_dataset")
+    print("built new_val_dataset")
+with open("data/new_val_dataset.pickle", 'rb') as file:
+    new_val_dataset = pickle.load(file)
+    print("loaded new_val_dataset")
+
+if not os.path.exists("data/new_test_dataset.pickle"):
+    build_homo_dataset(test_dataset, "new_test_dataset")
+    print("built new_test_dataset")
+with open("data/new_test_dataset.pickle", 'rb') as file:
+    new_test_dataset = pickle.load(file)
+    print("loaded new_test_dataset")
+
+
+
+
