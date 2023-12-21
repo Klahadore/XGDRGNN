@@ -1,6 +1,8 @@
 import torch
 import requests
 import json
+import os
+import pandas as pd
 from sentence_transformers import SentenceTransformer
 
 
@@ -15,7 +17,8 @@ def convert_string(string):
     return newlist
 
 #input disease id, return embedding based off definiton from API of NCBI
-def disease_embedding(id):
+def disease_and_symptom_embedding(id, path_to_file):
+    pilot = ""
     if id[0] == "D":
         try:
             url = f'https://id.nlm.nih.gov/mesh/{id}.json'
@@ -32,7 +35,7 @@ def disease_embedding(id):
                     if response.status_code == 200:
                         y = json.loads(response.content)
                         cat = y["scopeNote"]["@value"]
-    
+                        pilot = y["label"]["@value"]
                     else:
                         print("Failed")
                         return None
@@ -67,9 +70,26 @@ def disease_embedding(id):
     model = SentenceTransformer('BAAI/bge-small-en-v1.5')
     embeddings = model.encode(cat, show_progress_bar=False)
     print(embeddings)
-    return embeddings
 
-print(disease_embedding("D019957"))
+    data_dictionary = {}
+
+    with open(path_to_file, 'r') as file:
+        lines = file.readlines()[1:]
+
+        for line in lines:
+            columns = line.strip().split('\t')
+            key = columns[1]
+            value = columns[0]
+            if key in data_dictionary:
+                if value not in data_dictionary[key]:
+                    data_dictionary[key].append(value)
+            else:
+                data_dictionary[key] = [value]
+    return embeddings, data_dictionary[pilot]
+
+#downloads_folder = 'C:/Downloads'
+#file_pathway = os.path.join(downloads_folder, '41467_2014_BFncomms5212_MOESM1045_ESM.txt')
+print(disease_and_symptom_embedding("D012221", 'sypmtom_data.txt'))
 
 def chemical_embedding(id):
     return torch.ones(20, dtype=torch.float32)
