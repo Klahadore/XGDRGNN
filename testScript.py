@@ -11,9 +11,9 @@ import torch
 #
 # print(train_dataset.generate_ids())
 #
-# print(new_dataset.edge_type)
+print(new_train_dataset)
 #
-#
+print(train_dataset)
 #
 #
 #
@@ -24,7 +24,17 @@ import torch
 # print(new_dataset.edge_attr)
 #
 
+#
+# row, col = new_train_dataset.edge_label_index
+# print(row)
+# print(col)
+#
+# print(new_train_dataset.x[row].shape)
+# print(new_train_dataset.x[col].shape)
+#print(torch.cat([new_train_dataset.x[row], new_train_dataset.x[col]], dim=-1).shape)
 print(new_train_dataset)
-print(new_train_dataset.edge_attr)
-print(new_train_dataset.edge_type)
-
+print(new_train_dataset.edge_label_index.shape)
+# print(new_train_dataset.edge_label.shape)
+print(train_dataset['gene', 'gene_disease', 'disease'].edge_label.shape)
+print(train_dataset['gene', 'gene_disease', 'disease'].edge_label_index.shape)
+print(train_dataset)

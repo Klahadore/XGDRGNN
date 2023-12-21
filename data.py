@@ -1,15 +1,7 @@
-import torch
-from torch_geometric.data import Data, download_url, extract_zip
-from torch_geometric import utils
-import networkx as nx
-import json
 from torch_geometric.data import HeteroData
-from collections import OrderedDict
 import pickle
 import os
-import sys
 from torch_geometric import transforms as T
-
 
 from embeddings import *
 
@@ -235,8 +227,11 @@ train_dataset, val_dataset, test_dataset = transform(dataset)
 
 
 def build_homo_dataset(hetero_dataset, name):
-    new_dataset = hetero_dataset.to_homogeneous()
-
+    new_dataset = hetero_dataset.to_homogeneous(dummy_values=True)
+    # are dummy values, values for negative samples
+    # are zeros contained
+    # what are the dummy values for
+    # should we remove the dummy values
 
     mapping = generate_edge_type_map(hetero_dataset.metadata())
 
