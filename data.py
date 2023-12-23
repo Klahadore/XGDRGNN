@@ -8,6 +8,8 @@ from embeddings import *
 
 # extract_zip(download_url(URL, 'data'), 'data')
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 FOLDER_PATH = "data/Gene_Disease_Network"
 
 pickled_data_path = "data/pickled_data.pickle"
@@ -209,7 +211,8 @@ else:
         pickle.dump(dataset, file)
     print("Pickled data saved to file")
 
-
+dataset = T.ToDevice(device)(dataset)
+# dataset.to(device)
 dataset = T.ToUndirected()(dataset)
 
 

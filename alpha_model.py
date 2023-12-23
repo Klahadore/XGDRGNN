@@ -1,0 +1,63 @@
+import torch
+
+from data import new_train_dataset, train_dataset
+from HGATConv import SimpleHGATConv
+from torch_geometric.nn import Linear
+class testEdgeDecoder(torch.nn.Module):
+    def __init__(self, hidden_channels):
+        super().__init__()
+        self.lin1 = Linear(2 * hidden_channels, hidden_channels)
+        self.lin2 = Linear(hidden_channels, 1)
+
+    def forward(self, z, edge_label_index):
+        row, col = edge_label_index
+
+        z = torch.cat([z[row], z[col]], dim=-1)
+        z = self.lin1(z).relu()
+        z = self.lin2(z)
+        return z.view(-1)
+
+
+class testModel(torch.nn.Module):
+    def __init__(self, hidden_channels, metadata, edge_emb_len):
+        super().__init__()
+        self.encoder = SIUGATConv(hidden_channels, hidden_channels, 1, metadata, 20, concat=True, residual=False)
+        self.decoder = testEdgeDecoder(hidden_channels)
+
+    def forward(self, x, edge_index, node_type, edge_attr, edge_type, edge_label_index):
+        z = self.encoder(x, edge_index, node_type, edge_attr, edge_type)
+        print(z.shape, "z")
+
+
+        return self.decoder(z, edge_label_index), z
+
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+if __name__ == "__main__":
+
+    model = testModel(20, train_dataset.metadata(), 20).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+
+
+
+    def train():
+        model.train()
+        optimizer.zero_grad()
+        pred, z = model.forward(new_train_dataset.x, new_train_dataset.edge_index, new_train_dataset.node_type, new_train_dataset.edge_attr,
+                             new_train_dataset.edge_type, new_train_dataset.edge_label_index)
+        print(pred.shape, "pred")
+
+        target = new_train_dataset.edge_label[:len(new_train_dataset.edge_label_index[0])]
+        loss = torch.nn.BCEWithLogitsLoss()(pred, target)
+        loss.backward()
+        optimizer.step()
+        return float(loss)
+
+
+    for epoch in range(200):
+        print(train())
+
+
+torch.save(model.state_dict(), "cheese2.pt")
