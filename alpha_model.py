@@ -1,9 +1,28 @@
 import torch
 
+from visualize import visualize_emb
 from data import new_train_dataset, train_dataset
 from HGATConv import SimpleHGATConv
 from torch_geometric.nn import Linear
-class testEdgeDecoder(torch.nn.Module):
+
+
+"""
+Single head attention only
+no edge features
+"""
+class EdgeEncoder(torch.nn.Module):
+    def __init__(self, hidden_channels):
+        super().__init__()
+        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 1, train_dataset.metadata(), 20, concat=True, residual=False)
+        self.enc2 = SimpleHGATConv(hidden_channels, hidden_channels, 1, train_dataset.metadata(), 20, concat=True, residual=False)
+
+    def forward(self, x, edge_index, node_type, edge_attr, edge_type):
+        x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
+        x = self.enc2(x, edge_index, node_type, edge_attr, edge_type)
+        return x
+
+
+class EdgeDecoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.lin1 = Linear(2 * hidden_channels, hidden_channels)
@@ -18,28 +37,25 @@ class testEdgeDecoder(torch.nn.Module):
         return z.view(-1)
 
 
-class testModel(torch.nn.Module):
-    def __init__(self, hidden_channels, metadata, edge_emb_len):
+class Model(torch.nn.Module):
+    def __init__(self, hidden_channels):
         super().__init__()
-        self.encoder = SIUGATConv(hidden_channels, hidden_channels, 1, metadata, 20, concat=True, residual=False)
-        self.decoder = testEdgeDecoder(hidden_channels)
+        self.encoder = EdgeEncoder(hidden_channels)
+        self.decoder = EdgeDecoder(hidden_channels)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type, edge_label_index):
         z = self.encoder(x, edge_index, node_type, edge_attr, edge_type)
-        print(z.shape, "z")
-
 
         return self.decoder(z, edge_label_index), z
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+
 if __name__ == "__main__":
 
-    model = testModel(20, train_dataset.metadata(), 20).to(device)
+    model = Model(20).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-
-
 
 
     def train():
@@ -61,3 +77,5 @@ if __name__ == "__main__":
 
 
 torch.save(model.state_dict(), "cheese2.pt")
+
+

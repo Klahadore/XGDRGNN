@@ -1,11 +1,8 @@
 import torch.nn
-from torch_geometric.nn.conv import MessagePassing, HEATConv
-from torch_geometric.nn.inits import glorot, zeros
+from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import softmax
 import torch.nn.functional as F
 from torch_geometric.nn.dense.linear import Linear, HeteroLinear
-
-from data import train_dataset, test_dataset, val_dataset, new_test_dataset, new_train_dataset, new_val_dataset
 
 
 class SimpleHGATConv(MessagePassing):
@@ -37,7 +34,7 @@ class SimpleHGATConv(MessagePassing):
     def forward(self, x, edge_index, node_type, edge_type_emb, edge_type):
 
         x = self.node_lin(x, node_type)
-        print(edge_type_emb)
+
         edge_type_emb = self.edge_lin(edge_type_emb, edge_type)
 
         out = self.propagate(edge_index, x=x, edge_type_emb=edge_type_emb)
@@ -53,7 +50,7 @@ class SimpleHGATConv(MessagePassing):
         # Add residual connection if needed
         if self.residual:
             out = out + x
-        print(out.shape, "out")
+
         return out
 
     def message(self, x_i, x_j, edge_type_emb, index):
