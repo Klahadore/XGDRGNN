@@ -250,6 +250,12 @@ new_train_dataset = None
 new_val_dataset = None
 new_test_dataset = None
 
+if not os.path.exists("data/train_dataset_metadata.pickle"):
+    with open("data/train_dataset_metadata.pickle", 'wb') as file:
+        pickle.dump(train_dataset.metadata(), file)
+        print("dumped train_dataset.metadata()")
+
+
 if not os.path.exists("data/new_train_dataset.pickle"):
     build_homo_dataset(train_dataset, "new_train_dataset")
     print("built new_train_dataset")
@@ -257,19 +263,19 @@ with open("data/new_train_dataset.pickle", "rb") as file:
     new_train_dataset = pickle.load(file)
     print("loaded new_train_dataset")
 
-if not os.path.exists("data/new_val_dataset.pickle"):
-    build_homo_dataset(val_dataset, "new_val_dataset")
-    print("built new_val_dataset")
-with open("data/new_val_dataset.pickle", 'rb') as file:
-    new_val_dataset = pickle.load(file)
-    print("loaded new_val_dataset")
-
-if not os.path.exists("data/new_test_dataset.pickle"):
-    build_homo_dataset(test_dataset, "new_test_dataset")
-    print("built new_test_dataset")
-with open("data/new_test_dataset.pickle", 'rb') as file:
-    new_test_dataset = pickle.load(file)
-    print("loaded new_test_dataset")
+# if not os.path.exists("data/new_val_dataset.pickle"):
+#     build_homo_dataset(val_dataset, "new_val_dataset")
+#     print("built new_val_dataset")
+# with open("data/new_val_dataset.pickle", 'rb') as file:
+#     new_val_dataset = pickle.load(file)
+#     print("loaded new_val_dataset")
+#
+# if not os.path.exists("data/new_test_dataset.pickle"):
+#     build_homo_dataset(test_dataset, "new_test_dataset")
+#     print("built new_test_dataset")
+# with open("data/new_test_dataset.pickle", 'rb') as file:
+#     new_test_dataset = pickle.load(file)
+#     print("loaded new_test_dataset")
 
 
 

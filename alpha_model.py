@@ -1,10 +1,19 @@
 import torch
-
+import pickle
 from visualize import visualize_emb
-from data import new_train_dataset, train_dataset
+# from data import new_train_dataset, train_dataset
 from HGATConv import SimpleHGATConv
 from torch_geometric.nn import Linear
 
+metadata = None
+with open("data/train_dataset_metadata.pickle", "rb") as file:
+    metadata = pickle.load(file)
+    print("loaded metadata")
+
+new_train_dataset = None
+with open("data/new_train_dataset.pickle", "rb") as file:
+    new_train_dataset = pickle.load(file)
+    print("loaded new_train_dataset")
 
 """
 Single head attention only
@@ -13,8 +22,8 @@ no edge features
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
-        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 1, train_dataset.metadata(), 20, concat=True, residual=False)
-        self.enc2 = SimpleHGATConv(hidden_channels, hidden_channels, 1, train_dataset.metadata(), 20, concat=True, residual=False)
+        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 1, metadata, 20, concat=True, residual=False)
+        self.enc2 = SimpleHGATConv(hidden_channels, hidden_channels, 1, metadata, 20, concat=True, residual=False)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
         x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
@@ -75,7 +84,6 @@ if __name__ == "__main__":
     for epoch in range(200):
         print(train())
 
-
-torch.save(model.state_dict(), "cheese2.pt")
+    torch.save(model.state_dict(), "cheese2.pt")
 
 
