@@ -1,8 +1,11 @@
 from data import new_train_dataset
 import pickle
 import torch
+
+import torch_geometric
 from torch_geometric.loader import ClusterData, ClusterLoader, NeighborLoader, LinkNeighborLoader
 
+print(torch_geometric.typing.WITH_PYG_LIB)
 torch.manual_seed(69)
 print(new_train_dataset)
 
