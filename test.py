@@ -21,7 +21,6 @@ gene_embeddings = dict['gene']
 disease_embeddings = dict['disease']
 
 # Call the visualize_emb function with extracted embeddings
-visualize_emb(gene_embeddings, disease_embeddings)
-
-
+# visualize_emb(gene_embeddings, disease_embeddings)
+print(dict)
 # https://github.com/pyg-team/pytorch_geometric/discussions/8422

@@ -17,6 +17,7 @@ def convert_string(string):
     newlist = list(string.split(" "))
     return newlist
 
+
 def symptom_description(path_to_file):
     with open('symptom_data.pkl', 'rb') as fp:
         symptom_dictionary = pickle.load(fp)
@@ -132,6 +133,7 @@ def disease_and_symptom_embedding(id, path_to_file):
 
 #print(symptom_description('Symptom-Occurence-Output.txt'))
 print(disease_and_symptom_embedding("D012221", 'symptom_data.txt'))
+
 
 def chemical_embedding(id):
     return torch.ones(20, dtype=torch.float32)
