@@ -2,7 +2,7 @@ import torch
 import requests
 import json
 import pickle
-import unicodedata
+
 from sentence_transformers import SentenceTransformer
 
 

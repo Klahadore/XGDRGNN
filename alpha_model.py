@@ -15,14 +15,18 @@ new_train_dataset = None
 with open("data/new_train_dataset.pickle", "rb") as file:
     new_train_dataset = pickle.load(file)
     print("loaded new_train_dataset")
-
-
-
-
-
 """
-Single head attention only
-no edge features
+    Alpha model using HGATConv on 384 blank features.
+    
+    Model Hyperperameters:
+        hidden_channels = 20
+        out_channels = 20
+        lr = 0.01
+        epochs = 200
+        batch_size = 1
+        loss = BCEWithLogitsLoss
+        optimizer = Adam
+        device = cuda if available else cpu
 """
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):

@@ -12,7 +12,22 @@ import torch_geometric.transforms as T
 from data import train_dataset, test_dataset, val_dataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+"""
+    Beta model using sage conv on 384 blank features. 
+    Does not use edge attributes.
+    Uses train_dataset which is a HeteroData object.
+    Uses SageConv.
+    
+    Model Hyperperameters:
+        hidden_channels = 20
+        out_channels = 20
+        lr = 0.01
+        epochs = 200
+        batch_size = 1
+        loss = BCEWithLogitsLoss
+        optimizer = Adam
+        device = cuda if available else cpu
+"""
 
 class GCN(torch.nn.Module):
     def __init__(self, hidden_channels, out_channels):
