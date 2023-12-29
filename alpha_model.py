@@ -27,6 +27,7 @@ with open("data/new_train_dataset.pickle", "rb") as file:
         loss = BCEWithLogitsLoss
         optimizer = Adam
         device = cuda if available else cpu
+        
 """
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
