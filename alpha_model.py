@@ -34,8 +34,8 @@ torch.manual_seed(42)
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
-        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 8, metadata, 64, concat=True, residual=False)
-        self.enc2 = SimpleHGATConv(hidden_channels * 8, hidden_channels * 8, 8, metadata, 64, concat=False, residual=False)
+        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 4, metadata, 64, concat=True, residual=False)
+        self.enc2 = SimpleHGATConv(hidden_channels * 4, hidden_channels * 4, 4, metadata, 64, concat=False, residual=False)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
         x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
@@ -62,7 +62,7 @@ class Model(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.encoder = EdgeEncoder(hidden_channels)
-        self.decoder = EdgeDecoder(hidden_channels*8)
+        self.decoder = EdgeDecoder(hidden_channels*4)
 
     def forward(self, batch_data):
         x = batch_data.x
@@ -80,59 +80,61 @@ class Model(torch.nn.Module):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-if __name__ == "__main__":
+# currently training only works on cuda
+with torch.cuda.amp.autocast():
+    if __name__ == "__main__":
 
-    model = Model(384).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+        model = Model(384).to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    data_loader = LinkNeighborLoader(
-        new_train_dataset,
-        num_neighbors=[16] * 2,
-        batch_size=20000,
-        shuffle=True,
-        edge_label=new_train_dataset.edge_label,
-        edge_label_index=new_train_dataset.edge_label_index
-    )
+        data_loader = LinkNeighborLoader(
+            new_train_dataset,
+            num_neighbors=[8,6],
+            batch_size=384,
+            shuffle=True,
+            edge_label=new_train_dataset.edge_label,
+            edge_label_index=new_train_dataset.edge_label_index
+        )
 
-    def train(loader):
-        model.train()
-        total_loss = 0
-        total_examples = 0
-        for batch_data in loader:
-            batch_data = batch_data.to(device)
-            optimizer.zero_grad()
-            pred, _ = model(batch_data)
+        def train(loader):
+            model.train()
+            total_loss = 0
+            total_examples = 0
+            for batch_data in loader:
+                batch_data = batch_data.to(device)
+                optimizer.zero_grad()
+                pred, _ = model(batch_data)
+           # Assuming binary classification for edge prediction
+                
+                target = batch_data.edge_label[:len(pred)]
+                loss = torch.nn.BCEWithLogitsLoss()(pred, target.float())
+                loss.backward()
+                optimizer.step()
+                print(loss.item())
 
-            # Assuming binary classification for edge prediction
-            target = batch_data.edge_label[:len(pred)]
-            loss = torch.nn.BCEWithLogitsLoss()(pred, target.float())
-            loss.backward()
-            optimizer.step()
-            print(loss.item())
+                total_loss += float(loss) * pred.numel()
+                total_examples += pred.numel()
 
-            total_loss += float(loss) * pred.numel()
-            total_examples += pred.numel()
-
-        return total_loss / total_examples
+            return total_loss / total_examples
 
 
     # Create the LinkLoader here
-    for epoch in range(8):
-        epoch_loss = train(data_loader)
-        print(f"Epoch {epoch}: Loss {epoch_loss}")
-        if epoch == 1:
-            torch.save(model.state_dict(), "cheese_epoch2_2.pt")
-            print("epoch 2 saved")
-        if epoch == 3:
-            torch.save(model.state_dict(), "cheese_epoch4_2.pt")
-            print("epoch 4 saved")
-        if epoch == 5:
-            torch.save(model.state_dict(), "cheese_epoch6_2.pt")
-            print("epoch 6 saved")
-        if epoch == 7:
-            torch.save(model.state_dict(), "cheese_epoch8_2.pt")
-            print("epoch 8 saved")
+        for epoch in range(8):
+            epoch_loss = train(data_loader)
+            print(f"Epoch {epoch}: Loss {epoch_loss}")
+            if epoch == 1:
+                torch.save(model.state_dict(), "cheese_epoch2_2.pt")
+                print("epoch 2 saved")
+            if epoch == 3:
+                torch.save(model.state_dict(), "cheese_epoch4_2.pt")
+                print("epoch 4 saved")
+            if epoch == 5:
+                torch.save(model.state_dict(), "cheese_epoch6_2.pt")
+                print("epoch 6 saved")
+            if epoch == 7:
+                torch.save(model.state_dict(), "cheese_epoch8_2.pt")
+                print("epoch 8 saved")
 
-    print("done")
+        print("done")
 
 

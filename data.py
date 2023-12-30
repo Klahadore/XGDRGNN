@@ -211,7 +211,7 @@ else:
         pickle.dump(dataset, file)
     print("Pickled data saved to file")
 
-dataset = T.ToDevice(device)(dataset)
+
 # dataset.to(device)
 dataset = T.ToUndirected()(dataset)
 

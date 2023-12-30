@@ -46,7 +46,7 @@ class SimpleHGATConv(MessagePassing):
             return out
         else:
             # Average the outputs
-            out = out.view(len(out), self.out_channels, 8)
+            out = out.view(len(out), self.out_channels, self.num_heads)
             return out.mean(dim=-1)
 
         # Add residual connection if needed
