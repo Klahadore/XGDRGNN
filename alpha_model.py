@@ -117,12 +117,22 @@ if __name__ == "__main__":
 
 
     # Create the LinkLoader here
-
-
     for epoch in range(8):
         epoch_loss = train(data_loader)
         print(f"Epoch {epoch}: Loss {epoch_loss}")
+        if epoch == 1:
+            torch.save(model.state_dict(), "cheese_epoch2_2.pt")
+            print("epoch 2 saved")
+        if epoch == 3:
+            torch.save(model.state_dict(), "cheese_epoch4_2.pt")
+            print("epoch 4 saved")
+        if epoch == 5:
+            torch.save(model.state_dict(), "cheese_epoch6_2.pt")
+            print("epoch 6 saved")
+        if epoch == 7:
+            torch.save(model.state_dict(), "cheese_epoch8_2.pt")
+            print("epoch 8 saved")
 
-    torch.save(model.state_dict(), "cheese2.pt")
+    print("done")
 
 
