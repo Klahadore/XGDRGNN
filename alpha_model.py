@@ -15,6 +15,7 @@ new_train_dataset = None
 with open("data/new_train_dataset.pickle", "rb") as file:
     new_train_dataset = pickle.load(file)
     print("loaded new_train_dataset")
+
 """
     Alpha model using HGATConv on 384 blank features.
     
@@ -117,7 +118,7 @@ if __name__ == "__main__":
     # Create the LinkLoader here
 
 
-    for epoch in range(200):
+    for epoch in range(8):
         epoch_loss = train(data_loader)
         print(f"Epoch {epoch}: Loss {epoch_loss}")
 

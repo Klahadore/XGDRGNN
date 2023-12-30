@@ -29,7 +29,7 @@ def symptom_description(path_to_file):
             columns = line.strip().split('\t')
             key = columns[3]  # was 6
             if key not in symptom_dictionary:
-                # try:                                                     Everything below this needs to be indented if try/except is to be used again FYI
+                # try:  Everything below this needs to be indented if try/except is to be used again FYI
                 url = f'https://id.nlm.nih.gov/mesh/{key}.json'
                 response = requests.get(url)
                 if response.status_code == 200:
@@ -135,7 +135,7 @@ def disease_and_symptom_embedding(id):
 
 
 # print(symptom_description('Symptom-Occurence-Output.txt'))
-print(disease_and_symptom_embedding("D001835"))
+# print(disease_and_symptom_embedding("D001835"))
 
 
 def chemical_embedding(id):
