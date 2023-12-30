@@ -16,6 +16,7 @@ with open("data/new_train_dataset.pickle", "rb") as file:
     new_train_dataset = pickle.load(file)
     print("loaded new_train_dataset")
 
+torch.manual_seed(42)
 """
     Alpha model using HGATConv on 384 blank features.
     
@@ -33,8 +34,8 @@ with open("data/new_train_dataset.pickle", "rb") as file:
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
-        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 8, metadata, 20, concat=True, residual=False)
-        self.enc2 = SimpleHGATConv(hidden_channels * 8, hidden_channels * 8, 8, metadata, 20, concat=False, residual=False)
+        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 8, metadata, 64, concat=True, residual=False)
+        self.enc2 = SimpleHGATConv(hidden_channels * 8, hidden_channels * 8, 8, metadata, 64, concat=False, residual=False)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
         x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
@@ -81,12 +82,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 if __name__ == "__main__":
 
-    model = Model(20).to(device)
+    model = Model(384).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     data_loader = LinkNeighborLoader(
         new_train_dataset,
-        num_neighbors=[15] * 2,
+        num_neighbors=[16] * 2,
         batch_size=20000,
         shuffle=True,
         edge_label=new_train_dataset.edge_label,

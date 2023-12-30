@@ -9,7 +9,7 @@ from sklearn.metrics import roc_auc_score
 from visualize import visualize_graph, visualize_emb
 import torch_geometric.transforms as T
 
-from data import train_dataset, test_dataset, val_dataset
+# from data import train_dataset, test_dataset, val_dataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 """
