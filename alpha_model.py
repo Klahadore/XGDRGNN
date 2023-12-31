@@ -16,25 +16,13 @@ with open("data/new_train_dataset.pickle", "rb") as file:
     new_train_dataset = pickle.load(file)
     print("loaded new_train_dataset")
 
-"""
-    Alpha model using HGATConv on 384 blank features.
-    
-    Model Hyperperameters:
-        hidden_channels = 20
-        out_channels = 20
-        lr = 0.01
-        epochs = 200
-        batch_size = 1
-        loss = BCEWithLogitsLoss
-        optimizer = Adam
-        device = cuda if available else cpu
-        
-"""
+torch.manual_seed(42)
+
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
-        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 8, metadata, 20, concat=True, residual=False)
-        self.enc2 = SimpleHGATConv(hidden_channels * 8, hidden_channels * 8, 8, metadata, 20, concat=False, residual=False)
+        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 4, metadata, 64, concat=True, residual=True)
+        self.enc2 = SimpleHGATConv(hidden_channels * 4, hidden_channels * 4, 4, metadata, 64, concat=False, residual=True)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
         x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
@@ -61,7 +49,7 @@ class Model(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.encoder = EdgeEncoder(hidden_channels)
-        self.decoder = EdgeDecoder(hidden_channels*8)
+        self.decoder = EdgeDecoder(hidden_channels*4)
 
     def forward(self, batch_data):
         x = batch_data.x
@@ -79,19 +67,24 @@ class Model(torch.nn.Module):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
+# currently training only works on cuda
+
 if __name__ == "__main__":
 
-    model = Model(20).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    model = Model(384).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
 
     data_loader = LinkNeighborLoader(
         new_train_dataset,
-        num_neighbors=[15] * 2,
-        batch_size=20000,
+        num_neighbors=[12, 8],
+        batch_size=256,
         shuffle=True,
         edge_label=new_train_dataset.edge_label,
-        edge_label_index=new_train_dataset.edge_label_index
-    )
+        edge_label_index=new_train_dataset.edge_label_index,
+        num_workers=4
+        )
+
+    scaler = torch.cuda.amp.GradScaler()
 
     def train(loader):
         model.train()
@@ -101,12 +94,13 @@ if __name__ == "__main__":
             batch_data = batch_data.to(device)
             optimizer.zero_grad()
             pred, _ = model(batch_data)
+       # Assuming binary classification for edge prediction
 
-            # Assuming binary classification for edge prediction
             target = batch_data.edge_label[:len(pred)]
             loss = torch.nn.BCEWithLogitsLoss()(pred, target.float())
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             print(loss.item())
 
             total_loss += float(loss) * pred.numel()
@@ -115,13 +109,23 @@ if __name__ == "__main__":
         return total_loss / total_examples
 
 
-    # Create the LinkLoader here
+    with torch.cuda.amp.autocast():
+        for epoch in range(8):
+            epoch_loss = train(data_loader)
+            print(f"Epoch {epoch}: Loss {epoch_loss}")
+            if epoch == 1:
+                torch.save(model.state_dict(), "cheese_epoch2_2.pt")
+                print("epoch 2 saved")
+            if epoch == 3:
+                torch.save(model.state_dict(), "cheese_epoch4_2.pt")
+                print("epoch 4 saved")
+            if epoch == 5:
+                torch.save(model.state_dict(), "cheese_epoch6_2.pt")
+                print("epoch 6 saved")
+            if epoch == 7:
+                torch.save(model.state_dict(), "cheese_epoch8_2.pt")
+                print("epoch 8 saved")
 
-
-    for epoch in range(8):
-        epoch_loss = train(data_loader)
-        print(f"Epoch {epoch}: Loss {epoch_loss}")
-
-    torch.save(model.state_dict(), "cheese2.pt")
+    print("done")
 
 
