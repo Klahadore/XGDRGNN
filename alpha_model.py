@@ -21,8 +21,8 @@ torch.manual_seed(42)
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
-        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 4, metadata, 64, concat=True, residual=False)
-        self.enc2 = SimpleHGATConv(hidden_channels * 4, hidden_channels * 4, 4, metadata, 64, concat=False, residual=False)
+        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 4, metadata, 64, concat=True, residual=True)
+        self.enc2 = SimpleHGATConv(hidden_channels * 4, hidden_channels * 4, 4, metadata, 64, concat=False, residual=True)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
         x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
@@ -72,16 +72,17 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if __name__ == "__main__":
 
     model = Model(384).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
 
     data_loader = LinkNeighborLoader(
         new_train_dataset,
-        num_neighbors=[8, 6],
-        batch_size=384,
+        num_neighbors=[12, 8],
+        batch_size=256,
         shuffle=True,
         edge_label=new_train_dataset.edge_label,
-        edge_label_index=new_train_dataset.edge_label_index
-    )
+        edge_label_index=new_train_dataset.edge_label_index,
+        num_workers=4
+        )
 
     scaler = torch.cuda.amp.GradScaler()
 
