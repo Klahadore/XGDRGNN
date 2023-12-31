@@ -17,20 +17,7 @@ with open("data/new_train_dataset.pickle", "rb") as file:
     print("loaded new_train_dataset")
 
 torch.manual_seed(42)
-"""
-    Alpha model using HGATConv on 384 blank features.
-    
-    Model Hyperperameters:
-        hidden_channels = 20
-        out_channels = 20
-        lr = 0.01
-        epochs = 200
-        batch_size = 1
-        loss = BCEWithLogitsLoss
-        optimizer = Adam
-        device = cuda if available else cpu
-        
-"""
+
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
@@ -81,44 +68,47 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 # currently training only works on cuda
-with torch.cuda.amp.autocast():
-    if __name__ == "__main__":
 
-        model = Model(384).to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+if __name__ == "__main__":
 
-        data_loader = LinkNeighborLoader(
-            new_train_dataset,
-            num_neighbors=[8,6],
-            batch_size=384,
-            shuffle=True,
-            edge_label=new_train_dataset.edge_label,
-            edge_label_index=new_train_dataset.edge_label_index
-        )
+    model = Model(384).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-        def train(loader):
-            model.train()
-            total_loss = 0
-            total_examples = 0
-            for batch_data in loader:
-                batch_data = batch_data.to(device)
-                optimizer.zero_grad()
-                pred, _ = model(batch_data)
-           # Assuming binary classification for edge prediction
-                
-                target = batch_data.edge_label[:len(pred)]
-                loss = torch.nn.BCEWithLogitsLoss()(pred, target.float())
-                loss.backward()
-                optimizer.step()
-                print(loss.item())
+    data_loader = LinkNeighborLoader(
+        new_train_dataset,
+        num_neighbors=[8, 6],
+        batch_size=384,
+        shuffle=True,
+        edge_label=new_train_dataset.edge_label,
+        edge_label_index=new_train_dataset.edge_label_index
+    )
 
-                total_loss += float(loss) * pred.numel()
-                total_examples += pred.numel()
+    scaler = torch.cuda.amp.GradScaler()
 
-            return total_loss / total_examples
+    def train(loader):
+        model.train()
+        total_loss = 0
+        total_examples = 0
+        for batch_data in loader:
+            batch_data = batch_data.to(device)
+            optimizer.zero_grad()
+            pred, _ = model(batch_data)
+       # Assuming binary classification for edge prediction
+
+            target = batch_data.edge_label[:len(pred)]
+            loss = torch.nn.BCEWithLogitsLoss()(pred, target.float())
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+            print(loss.item())
+
+            total_loss += float(loss) * pred.numel()
+            total_examples += pred.numel()
+
+        return total_loss / total_examples
 
 
-    # Create the LinkLoader here
+    with torch.cuda.amp.autocast():
         for epoch in range(8):
             epoch_loss = train(data_loader)
             print(f"Epoch {epoch}: Loss {epoch_loss}")
@@ -135,6 +125,6 @@ with torch.cuda.amp.autocast():
                 torch.save(model.state_dict(), "cheese_epoch8_2.pt")
                 print("epoch 8 saved")
 
-        print("done")
+    print("done")
 
 
