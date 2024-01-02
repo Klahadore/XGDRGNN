@@ -171,18 +171,17 @@ def build_dataset():
         build_file_mapping("disease_disease.json"),
         disease_to_index, disease_to_index)
 
-    dataset['gene', 'gene_disease', 'disease'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['gene', 'gene_chemical', 'chemical'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['gene', 'gene_phe', 'phe'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['gene', 'gene_mutation', 'mutation'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['gene', 'gene_pathway', 'pathway'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['gene', 'gene_gene', 'gene'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['disease', 'disease_chemical', 'chemical'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['disease', 'disease_phe', 'phe'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['disease', 'disease_mutation', 'mutation'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['disease', 'disease_pathway', 'pathway'].edge_attr = torch.ones(20, dtype=torch.float32)
-    dataset['disease', 'disease_disease', 'disease'].edge_attr = torch.ones(20, dtype=torch.float32)
-
+    dataset['gene', 'gene_disease', 'disease'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['gene', 'gene_chemical', 'chemical'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['gene', 'gene_phe', 'phe'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['gene', 'gene_mutation', 'mutation'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['gene', 'gene_pathway', 'pathway'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['gene', 'gene_gene', 'gene'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['disease', 'disease_chemical', 'chemical'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['disease', 'disease_phe', 'phe'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['disease', 'disease_mutation', 'mutation'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['disease', 'disease_pathway', 'pathway'].edge_attr = torch.ones(384, dtype=torch.float32)
+    dataset['disease', 'disease_disease', 'disease'].edge_attr = torch.ones(384, dtype=torch.float32)
 
     return dataset
 
@@ -231,10 +230,6 @@ train_dataset, val_dataset, test_dataset = transform(dataset)
 
 def build_homo_dataset(hetero_dataset, name):
     new_dataset = hetero_dataset.to_homogeneous(dummy_values=True)
-    # are dummy values, values for negative samples
-    # are zeros contained
-    # what are the dummy values for
-    # should we remove the dummy values
 
     mapping = generate_edge_type_map(hetero_dataset.metadata())
 
