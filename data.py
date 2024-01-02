@@ -14,6 +14,7 @@ FOLDER_PATH = "data/Gene_Disease_Network"
 
 pickled_data_path = "data/pickled_data.pickle"
 
+torch.manual_seed(42)
 
 def build_file_mapping(filename):
     with open(FOLDER_PATH + "/" + filename) as file:
@@ -130,7 +131,7 @@ def build_dataset():
     build_index_map_of_values("disease_pathway.json", pathway_to_index)
     build_index_map_of_values("gene_pathway.json", pathway_to_index)
 
-    dataset = HeteroData()
+    dataset = HeteroData().to(device)
 
     dataset['gene'].x = create_node_embedding_tensor(gene_to_index, gene_embedding)
     dataset['disease'].x = create_node_embedding_tensor(disease_to_index, disease_embedding)
@@ -171,6 +172,7 @@ def build_dataset():
         build_file_mapping("disease_disease.json"),
         disease_to_index, disease_to_index)
 
+
     dataset['gene', 'gene_disease', 'disease'].edge_attr = torch.ones(384, dtype=torch.float32)
     dataset['gene', 'gene_chemical', 'chemical'].edge_attr = torch.ones(384, dtype=torch.float32)
     dataset['gene', 'gene_phe', 'phe'].edge_attr = torch.ones(384, dtype=torch.float32)
@@ -182,6 +184,7 @@ def build_dataset():
     dataset['disease', 'disease_mutation', 'mutation'].edge_attr = torch.ones(384, dtype=torch.float32)
     dataset['disease', 'disease_pathway', 'pathway'].edge_attr = torch.ones(384, dtype=torch.float32)
     dataset['disease', 'disease_disease', 'disease'].edge_attr = torch.ones(384, dtype=torch.float32)
+
 
     return dataset
 
@@ -210,7 +213,7 @@ else:
         pickle.dump(dataset, file)
     print("Pickled data saved to file")
 
-dataset = T.ToDevice(device)(dataset)
+
 # dataset.to(device)
 dataset = T.ToUndirected()(dataset)
 
@@ -254,20 +257,20 @@ if not os.path.exists("data/train_dataset_metadata.pickle"):
 if not os.path.exists("data/new_train_dataset.pickle"):
     build_homo_dataset(train_dataset, "new_train_dataset")
     print("built new_train_dataset")
-with open("data/new_train_dataset.pickle", "rb") as file:
-    new_train_dataset = pickle.load(file)
-    print("loaded new_train_dataset")
+# with open("data/new_train_dataset.pickle", "rb") as file:
+#     new_train_dataset = pickle.load(file)
+#     print("loaded new_train_dataset")
 
-# if not os.path.exists("data/new_val_dataset.pickle"):
-#     build_homo_dataset(val_dataset, "new_val_dataset")
-#     print("built new_val_dataset")
+if not os.path.exists("data/new_val_dataset.pickle"):
+    build_homo_dataset(val_dataset, "new_val_dataset")
+    print("built new_val_dataset")
 # with open("data/new_val_dataset.pickle", 'rb') as file:
 #     new_val_dataset = pickle.load(file)
 #     print("loaded new_val_dataset")
-#
-# if not os.path.exists("data/new_test_dataset.pickle"):
-#     build_homo_dataset(test_dataset, "new_test_dataset")
-#     print("built new_test_dataset")
+
+if not os.path.exists("data/new_test_dataset.pickle"):
+    build_homo_dataset(test_dataset, "new_test_dataset")
+    print("built new_test_dataset")
 # with open("data/new_test_dataset.pickle", 'rb') as file:
 #     new_test_dataset = pickle.load(file)
 #     print("loaded new_test_dataset")

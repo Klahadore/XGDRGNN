@@ -6,13 +6,14 @@ from torch_geometric.nn.dense.linear import Linear, HeteroLinear
 
 
 class SimpleHGATConv(MessagePassing):
-    def __init__(self, in_channels, out_channels, num_heads, metadata, edge_dim, concat=False, residual=False):
-        super(SimpleHGATConv, self).__init__(aggr='add')
+    def __init__(self, in_channels, out_channels, num_heads, metadata, edge_dim, concat=False, residual=False, dropout=.1):
+        super(SimpleHGATConv, self).__init__(node_dim=0, aggr='add')
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.num_heads = num_heads
         self.concat = concat
         self.residual = residual
+        self.dropout = dropout
 
         self.metadata = metadata
         self.edge_dim = edge_dim
@@ -20,16 +21,14 @@ class SimpleHGATConv(MessagePassing):
         self.node_lin = HeteroLinear(in_channels, out_channels, len(metadata[0]))
         self.edge_lin = HeteroLinear(edge_dim, edge_dim, len(metadata[1]))
 
-        self.attention = torch.nn.ModuleList(
-            [Linear(2 * in_channels + edge_dim, 1) for _ in range(num_heads)]
-        )
+        self.att = Linear(2 * in_channels + edge_dim, self.num_heads, bias=False)
 
     def reset_parameters(self):
         super().reset_parameters()
         self.node_lin.reset_parameters()
         self.edge_lin.reset_parameters()
-        for a in self.attention:
-            a.reset_parameters()
+
+        self.att.reset_parameters()
 
     def forward(self, x, edge_index, node_type, edge_type_emb, edge_type):
 
@@ -40,38 +39,26 @@ class SimpleHGATConv(MessagePassing):
         out = self.propagate(edge_index, x=x, edge_type_emb=edge_type_emb)
 
         # Concatenate or average the outputs from the different heads
-        if self.concat:
+        if self.concat and self.residual:
             # Concatenate along the last dimension
-            # print(out.shape)
-            return out
-        else:
+            out = out + x.view(-1, 1, self.out_channels)
+            return out.view(-1, self.out_channels * self.num_heads)
+        elif self.concat and not self.residual:
+            return out.view(-1, self.out_channels * self.num_heads)
+        elif self.residual:
             # Average the outputs
-            out = out.view(len(out), self.out_channels, 8)
-            return out.mean(dim=-1)
-
-        # Add residual connection if needed
-        # if self.residual:
-        #     out = out + x
-
-
+            out = out.mean(dim=1)
+            return out + x
+        else:
+            return out.mean(dim=1)
 
     def message(self, x_i, x_j, edge_type_emb, index):
-        e_ij = torch.cat([x_i, x_j, edge_type_emb], dim=1)
-        alpha = []
-        for a in self.attention:
-            alpha.append(a(e_ij))
-
-        alpha = torch.cat(alpha, dim=-1)
+        alpha = torch.cat([x_i, x_j, edge_type_emb], dim=-1)
+        
+        alpha = self.att(alpha)
         alpha = F.leaky_relu(alpha, .2)
         alpha = softmax(alpha, index)
+        alpha = F.dropout(alpha, p=self.dropout, training=True)
+        
+        return x_j.unsqueeze(-2) * alpha.unsqueeze(-1)
 
-        out = x_j * alpha[:, 0].view(-1, 1)
-        out = out.unsqueeze(2)
-
-        if self.num_heads == 1:
-            return out
-
-        for i in range(1, self.num_heads):
-            out = torch.cat([out, (x_j * alpha[:, i].view(-1, 1)).unsqueeze(2)], dim=2)
-
-        return out.reshape(len(out), -1)

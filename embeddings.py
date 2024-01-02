@@ -39,10 +39,7 @@ def gene_embedding(id):
 
 
 def gene_embedding(id):
-    return torch.ones(20, dtype=torch.float32)
-
-
-
+    return torch.ones(384, dtype=torch.float32)
 
 # if cant find embeddings of disease, ask user for input and input an embedding of the disease. Dont stop running.
 # check if scopenote is blank, ask user for definition.      Done
@@ -141,6 +138,7 @@ def input_disease_output_symptoms(id, path_to_file):
 
 
 
+
 # print(symptom_description('Symptom-Occurence-Output.txt'))
 # print(disease_and_symptom_embedding("D001835"))
 # print(input_disease_output_symptoms("D012221", 'symptom_data.txt'))
@@ -148,16 +146,17 @@ def input_disease_output_symptoms(id, path_to_file):
 
 
 def chemical_embedding(id):
-    return torch.ones(384, dtype=torch.float16)
+    return torch.ones(384, dtype=torch.float32)
 
 
 def phe_embedding(id):
-    return torch.ones(384, dtype=torch.float16)
+    return torch.ones(384, dtype=torch.float32)
 
 
 def mutation_embedding(id):
-    return torch.ones(384, dtype=torch.float16)
+    return torch.ones(384, dtype=torch.float32)
 
 
 def pathway_embedding(id):
-    return torch.ones(384, dtype=torch.float16)
+    return torch.ones(384, dtype=torch.float32)
+
