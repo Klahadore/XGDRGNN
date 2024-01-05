@@ -1,7 +1,7 @@
 import json
 import pickle
 import requests
-
+import wikipediaapi
 """
     Makes a json map of diseases and their associated symptoms. 
     Symptoms are also diseases, but they are represented seperately as they are a different
@@ -29,9 +29,7 @@ def tester(id):
             pickle.dump(data_dictionary, fp, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=True)
             print('Dictionary saved successfully')
     return data_dictionary[id]
-def name_resolver(name):
-    value = requests.get(f"https://id.nlm.nih.gov/mesh/{name}.json").json()
-    return value["label"]["@value"]
+
 def list_of_symptoms(id):
     with open('disease_and_its_symptom_dictionary.pkl', 'rb') as fp:
         data_dictionary = pickle.load(fp)
@@ -90,9 +88,17 @@ def build_index_map_of_values(filename, index_map):
         for value in json_data[key]:
             add_to_map_index(index_map, value)
 
-def name_resolver(name):
-    value = requests.get(f"https://id.nlm.nih.gov/mesh/{name}.json").json()
+def name_resolver(id):
+    try:
+        value = requests.get(f"https://id.nlm.nih.gov/mesh/{id}.json&apiKey=6c774137ff12e427b17f7bdc60258d9c8108").json()
+        print(value)
+    except:
+        print("failed to get disease name")
+        print("disease id " + id)
+        return input("Please input a disease name here: ")
+
     return value["label"]["@value"]
+
 
 
 def symptom_description(path_to_file):
@@ -134,6 +140,31 @@ def symptom_description(path_to_file):
         print(symptom_dictionary)
 
 
+def name_from_ncbi(id):
+    url = f'https://id.nlm.nih.gov/mesh/{id}.json'
+    response = requests.get(url)
+    if response.status_code == 200:
+        y = json.loads(response.content)
+        print(y, id)
+        try:
+            search = y["preferredConcept"]
+        except:
+            print("resolve your own name", id)
+            return(input("name: "))
+
+        url = search + ".json"
+        response = requests.get(url)
+        if response.status_code == 200:
+            y = json.loads(response.content)
+
+            name = y["label"]["@value"].lower()
+        else:
+            print("Status code not 200.")
+            return None
+    else:
+        print("Status code not 200.")
+        return None
+    return name
 def input_disease_output_symptoms(id, path_to_file):
     data_dictionary = {}
     with open(path_to_file, 'r') as file:
@@ -153,25 +184,42 @@ def input_disease_output_symptoms(id, path_to_file):
         print(data_dictionary)
     # return data_dictionary
 
+def generate_disease_list():
+    dlist = []
+    with open('data/Gene_Disease_Network/disease_symptom.json') as file:
+        json_data = json.load(file)
+        for key in json_data:
+            if key not in dlist:
+                dlist.append(key)
+    return dlist
+
+def make_disease_definitions(id):
+    id = id[5:]
+    with open('data/disease_definition_wiki.pkl', 'rb') as fp:
+        disease_dictionary = pickle.load(fp)
+    key = id
+    if key in disease_dictionary:
+        return
+    wiki_wiki = wikipediaapi.Wikipedia('XGDRGNN Neural Network Science Fair Project (we are looking for data)', 'en')
+    page_py = wiki_wiki.page(name_from_ncbi(id))
+    print("Page - Title: %s" % page_py.title)
+    print("Page - Summary: %s" % page_py.summary[0:5000])
+    disease_dictionary[key] = page_py.summary[0:5000]
+    with open('data/disease_definition_wiki.pkl', 'wb') as fp:
+        pickle.dump(disease_dictionary, fp, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=True)
+        print(len(disease_dictionary.keys()))
+
 if __name__ == "__main__":
-    disease_symptom = {}
 
-    build_index_map_of_keys("disease_disease.json", disease_symptom)
-    build_index_map_of_values("disease_disease.json", disease_symptom)
-    build_index_map_of_keys("disease_chemical.json", disease_symptom)
-    build_index_map_of_keys("disease_gene.json", disease_symptom)
-    build_index_map_of_keys("disease_mutation.json", disease_symptom)
-    build_index_map_of_keys("disease_phe.json", disease_symptom)
-    build_index_map_of_keys("disease_pathway.json", disease_symptom)
-    build_index_map_of_values('gene_disease.json', disease_symptom)
+    # dlist = generate_disease_list()
+    # print(dlist)
+    # disease_defs = {}
+    #
+    # for i in dlist:
+    #     make_disease_definitions(i)
+    #
+    with open('data/disease_definition_wiki.pkl', 'rb') as fp:
+        disease_defs = pickle.load(fp)
+        print(len(disease_defs.keys()))
 
-    with open('data/Gene_Disease_Network/disease_symptom.json', 'w') as fp:
-        json.dump(disease_symptom, fp)
-        print('Dictionary saved successfully')
-        print(len(disease_symptom.keys()))
-
-
-
-
-
-
+        print(disease_defs.keys())

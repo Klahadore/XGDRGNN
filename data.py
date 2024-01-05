@@ -1,3 +1,4 @@
+
 from torch_geometric.data import HeteroData
 import pickle
 import os
@@ -81,16 +82,25 @@ def generate_edge_type_map(metadata):
     return inv_map
 
 
+import torch
+
 def generate_new_edge_attr_tensor(edge_type_mapping, edge_type, het_dataset):
-    edge_attrs = []
-    for i in edge_type.tolist():
+    # Pre-determine the size of the tensor
+    num_edges = len(edge_type)
+    # Assuming each edge attribute is of the same size, get the size of the first attribute
+    first_attr_size = het_dataset.edge_attr_dict[next(iter(het_dataset.edge_attr_dict))].size()
+
+    # Preallocate tensor space
+    edge_attrs = torch.empty((num_edges, *first_attr_size))
+
+    for idx, i in enumerate(edge_type.tolist()):
         src, middle, dst = edge_type_mapping[i]
         if "rev" in middle:
-            edge_attrs.append(het_dataset.edge_attr_dict[(dst, middle[4:], src)])
-
+            edge_attrs[idx] = het_dataset.edge_attr_dict[(dst, middle[4:], src)]
         else:
-            edge_attrs.append(het_dataset.edge_attr_dict[edge_type_mapping[i]])
-    return torch.stack(edge_attrs)
+            edge_attrs[idx] = het_dataset.edge_attr_dict[edge_type_mapping[i]]
+
+    return edge_attrs
 
 
 def build_dataset():
@@ -100,6 +110,9 @@ def build_dataset():
     phe_to_index = {}
     mutation_to_index = {}
     pathway_to_index = {}
+
+    symptom_to_index = {}
+    build_index_map_of_values("disease_symptom.json", symptom_to_index)
 
     build_index_map_of_keys("gene_disease.json", gene_to_index)
     build_index_map_of_keys("gene_mutation.json", gene_to_index)
@@ -131,15 +144,18 @@ def build_dataset():
     build_index_map_of_values("disease_pathway.json", pathway_to_index)
     build_index_map_of_values("gene_pathway.json", pathway_to_index)
 
-    dataset = HeteroData().to(device)
-
+    dataset = HeteroData()
+    dataset['symptom'].x = create_node_embedding_tensor(symptom_to_index, disease_and_symptom_embedding)
+    print(dataset['symptom'].x.shape)
     dataset['gene'].x = create_node_embedding_tensor(gene_to_index, gene_embedding)
-    dataset['disease'].x = create_node_embedding_tensor(disease_to_index, disease_embedding)
+    dataset['disease'].x = create_node_embedding_tensor(disease_to_index, disease_and_symptom_embedding)
     dataset['chemical'].x = create_node_embedding_tensor(chemical_to_index, chemical_embedding)
     dataset['phe'].x = create_node_embedding_tensor(phe_to_index, phe_embedding)
     dataset['mutation'].x = create_node_embedding_tensor(mutation_to_index, mutation_embedding)
     dataset['pathway'].x = create_node_embedding_tensor(pathway_to_index, pathway_embedding)
 
+    dataset['disease', 'disease_symptom', 'symptom'].edge_index = create_edge_indices(build_file_mapping("disease_symptom.json"), disease_to_index, symptom_to_index)
+    print(dataset['disease', 'disease_symptom', 'symptom'].edge_index.shape)
     dataset['gene', 'gene_disease', 'disease'].edge_index = create_edge_indices(
         build_file_mapping("gene_disease.json"),
         gene_to_index, disease_to_index)
@@ -172,18 +188,20 @@ def build_dataset():
         build_file_mapping("disease_disease.json"),
         disease_to_index, disease_to_index)
 
-
-    dataset['gene', 'gene_disease', 'disease'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['gene', 'gene_chemical', 'chemical'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['gene', 'gene_phe', 'phe'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['gene', 'gene_mutation', 'mutation'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['gene', 'gene_pathway', 'pathway'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['gene', 'gene_gene', 'gene'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['disease', 'disease_chemical', 'chemical'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['disease', 'disease_phe', 'phe'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['disease', 'disease_mutation', 'mutation'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['disease', 'disease_pathway', 'pathway'].edge_attr = torch.ones(384, dtype=torch.float32)
-    dataset['disease', 'disease_disease', 'disease'].edge_attr = torch.ones(384, dtype=torch.float32)
+    with open('data/new_connection_embedding.pkl', 'rb') as file:
+        edge_dict = pickle.load(file)
+    dataset['disease', 'disease_symptom', 'symptom'].edge_attr = torch.tensor(edge_dict['disease_symptom'])
+    dataset['gene', 'gene_disease', 'disease'].edge_attr = torch.tensor(edge_dict['gene_disease'])
+    dataset['gene', 'gene_chemical', 'chemical'].edge_attr = torch.tensor(edge_dict['gene_chemical'])
+    dataset['gene', 'gene_phe', 'phe'].edge_attr = torch.tensor(edge_dict['gene_phe'])
+    dataset['gene', 'gene_mutation', 'mutation'].edge_attr = torch.tensor(edge_dict['gene_mutation'])
+    dataset['gene', 'gene_pathway', 'pathway'].edge_attr = torch.tensor(edge_dict['gene_pathway'])
+    dataset['gene', 'gene_gene', 'gene'].edge_attr = torch.tensor(edge_dict['gene_gene'])
+    dataset['disease', 'disease_chemical', 'chemical'].edge_attr = torch.tensor(edge_dict['disease_chemical'])
+    dataset['disease', 'disease_phe', 'phe'].edge_attr = torch.tensor(edge_dict['disease_phe'])
+    dataset['disease', 'disease_mutation', 'mutation'].edge_attr = torch.tensor(edge_dict['disease_mutation'])
+    dataset['disease', 'disease_pathway', 'pathway'].edge_attr = torch.tensor(edge_dict['disease_pathway'])
+    dataset['disease', 'disease_disease', 'disease'].edge_attr = torch.tensor(edge_dict['disease_disease'])
 
 
     return dataset
@@ -230,23 +248,30 @@ transform = T.RandomLinkSplit(
 )
 train_dataset, val_dataset, test_dataset = transform(dataset)
 
+del dataset
+# del val_dataset
+# del test_dataset
+
 
 def build_homo_dataset(hetero_dataset, name):
+    print(hetero_dataset.metadata())
     new_dataset = hetero_dataset.to_homogeneous(dummy_values=True)
+    del hetero_dataset['gene'].x
+    del hetero_dataset['disease'].x
+    del hetero_dataset['phe'].x
+    del hetero_dataset['chemical'].x
+    del hetero_dataset['mutation'].x
 
     mapping = generate_edge_type_map(hetero_dataset.metadata())
-
     new_dataset.edge_attr = generate_new_edge_attr_tensor(mapping, new_dataset.edge_type, hetero_dataset)
 
     with open(f"data/{name}.pickle", 'wb') as file:
         pickle.dump(new_dataset, file)
     print("successfully built homogenous dataset and dumped pickled file at" + f"data/{name}.pickle")
-    return new_dataset
+    return dataset
 
 
-new_train_dataset = None
-new_val_dataset = None
-new_test_dataset = None
+
 
 if not os.path.exists("data/train_dataset_metadata.pickle"):
     with open("data/train_dataset_metadata.pickle", 'wb') as file:
@@ -257,13 +282,15 @@ if not os.path.exists("data/train_dataset_metadata.pickle"):
 if not os.path.exists("data/new_train_dataset.pickle"):
     build_homo_dataset(train_dataset, "new_train_dataset")
     print("built new_train_dataset")
+# del train_dataset
 # with open("data/new_train_dataset.pickle", "rb") as file:
 #     new_train_dataset = pickle.load(file)
 #     print("loaded new_train_dataset")
-
+#
 if not os.path.exists("data/new_val_dataset.pickle"):
     build_homo_dataset(val_dataset, "new_val_dataset")
     print("built new_val_dataset")
+del val_dataset
 # with open("data/new_val_dataset.pickle", 'rb') as file:
 #     new_val_dataset = pickle.load(file)
 #     print("loaded new_val_dataset")
