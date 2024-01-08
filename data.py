@@ -3,6 +3,7 @@ from torch_geometric.data import HeteroData
 import pickle
 import os
 from torch_geometric import transforms as T
+from sklearn.decomposition import PCA
 
 from embeddings import *
 
@@ -82,16 +83,15 @@ def generate_edge_type_map(metadata):
     return inv_map
 
 
-import torch
 
 def generate_new_edge_attr_tensor(edge_type_mapping, edge_type, het_dataset):
     # Pre-determine the size of the tensor
     num_edges = len(edge_type)
     # Assuming each edge attribute is of the same size, get the size of the first attribute
-    first_attr_size = het_dataset.edge_attr_dict[next(iter(het_dataset.edge_attr_dict))].size()
+   #  first_attr_size = het_dataset.edge_attr_dict[next(iter(het_dataset.edge_attr_dict))].size()
 
     # Preallocate tensor space
-    edge_attrs = torch.empty((num_edges, *first_attr_size))
+    edge_attrs = torch.empty((num_edges, 64))
 
     for idx, i in enumerate(edge_type.tolist()):
         src, middle, dst = edge_type_mapping[i]
@@ -112,7 +112,6 @@ def build_dataset():
     pathway_to_index = {}
 
     symptom_to_index = {}
-    build_index_map_of_values("disease_symptom.json", symptom_to_index)
 
     build_index_map_of_keys("gene_disease.json", gene_to_index)
     build_index_map_of_keys("gene_mutation.json", gene_to_index)
@@ -144,9 +143,11 @@ def build_dataset():
     build_index_map_of_values("disease_pathway.json", pathway_to_index)
     build_index_map_of_values("gene_pathway.json", pathway_to_index)
 
+    build_index_map_of_values("disease_symptom.json", symptom_to_index)
+
     dataset = HeteroData()
     dataset['symptom'].x = create_node_embedding_tensor(symptom_to_index, disease_and_symptom_embedding)
-    print(dataset['symptom'].x.shape)
+
     dataset['gene'].x = create_node_embedding_tensor(gene_to_index, gene_embedding)
     dataset['disease'].x = create_node_embedding_tensor(disease_to_index, disease_and_symptom_embedding)
     dataset['chemical'].x = create_node_embedding_tensor(chemical_to_index, chemical_embedding)
@@ -154,8 +155,6 @@ def build_dataset():
     dataset['mutation'].x = create_node_embedding_tensor(mutation_to_index, mutation_embedding)
     dataset['pathway'].x = create_node_embedding_tensor(pathway_to_index, pathway_embedding)
 
-    dataset['disease', 'disease_symptom', 'symptom'].edge_index = create_edge_indices(build_file_mapping("disease_symptom.json"), disease_to_index, symptom_to_index)
-    print(dataset['disease', 'disease_symptom', 'symptom'].edge_index.shape)
     dataset['gene', 'gene_disease', 'disease'].edge_index = create_edge_indices(
         build_file_mapping("gene_disease.json"),
         gene_to_index, disease_to_index)
@@ -188,9 +187,11 @@ def build_dataset():
         build_file_mapping("disease_disease.json"),
         disease_to_index, disease_to_index)
 
+    dataset['disease', 'disease_symptom', 'symptom'].edge_index = create_edge_indices(build_file_mapping("disease_symptom.json"), disease_to_index, symptom_to_index)
+
+
     with open('data/new_connection_embedding.pkl', 'rb') as file:
         edge_dict = pickle.load(file)
-    dataset['disease', 'disease_symptom', 'symptom'].edge_attr = torch.tensor(edge_dict['disease_symptom'])
     dataset['gene', 'gene_disease', 'disease'].edge_attr = torch.tensor(edge_dict['gene_disease'])
     dataset['gene', 'gene_chemical', 'chemical'].edge_attr = torch.tensor(edge_dict['gene_chemical'])
     dataset['gene', 'gene_phe', 'phe'].edge_attr = torch.tensor(edge_dict['gene_phe'])
@@ -202,6 +203,7 @@ def build_dataset():
     dataset['disease', 'disease_mutation', 'mutation'].edge_attr = torch.tensor(edge_dict['disease_mutation'])
     dataset['disease', 'disease_pathway', 'pathway'].edge_attr = torch.tensor(edge_dict['disease_pathway'])
     dataset['disease', 'disease_disease', 'disease'].edge_attr = torch.tensor(edge_dict['disease_disease'])
+    dataset['disease', 'disease_symptom', 'symptom'].edge_attr = torch.tensor(edge_dict['disease_symptom'])
 
 
     return dataset
@@ -232,9 +234,9 @@ else:
     print("Pickled data saved to file")
 
 
-# dataset.to(device)
+dataset = T.ToDevice(device)(dataset)
 dataset = T.ToUndirected()(dataset)
-
+dataset = T.NormalizeFeatures()(dataset)
 
 
 
@@ -251,6 +253,36 @@ train_dataset, val_dataset, test_dataset = transform(dataset)
 del dataset
 # del val_dataset
 # del test_dataset
+def build_edge_attr(het_dataset, edge_type, edge_type_mapping):
+    arr = []
+    for i in het_dataset.metadata()[1]:
+        print(i)
+        src, middle, dst = i
+        if "rev" in middle:
+            arr.append(het_dataset.edge_attr_dict[(dst, middle[4:], src)])
+        else:
+            arr.append(het_dataset.edge_attr_dict[i])
+
+    arr = torch.stack(arr)
+    print(arr.shape)
+    pca = PCA(n_components=22)
+
+    # Fit PCA on the data and transform the data
+    arr = torch.tensor(pca.fit_transform(arr.numpy()))
+
+    final_tensor = []
+    for i in edge_type.tolist():
+        src, middle, dst = edge_type_mapping[i]
+        if "rev" in middle:
+            index = het_dataset.metadata()[1].index((dst, middle[4:], src))
+            final_tensor.append(arr[index])
+        else:
+            index = het_dataset.metadata()[1].index((src, middle, dst))
+            final_tensor.append(arr[index])
+
+    return torch.stack(final_tensor)
+
+
 
 
 def build_homo_dataset(hetero_dataset, name):
@@ -263,12 +295,15 @@ def build_homo_dataset(hetero_dataset, name):
     del hetero_dataset['mutation'].x
 
     mapping = generate_edge_type_map(hetero_dataset.metadata())
-    new_dataset.edge_attr = generate_new_edge_attr_tensor(mapping, new_dataset.edge_type, hetero_dataset)
+    new_dataset.edge_attr = build_edge_attr(hetero_dataset, new_dataset.edge_type, mapping)
+    print(new_dataset.edge_attr.numpy().shape)
+   #  new_dataset.edge_attr = generate_new_edge_attr_tensor(mapping, new_dataset.edge_type, hetero_dataset)
 
     with open(f"data/{name}.pickle", 'wb') as file:
         pickle.dump(new_dataset, file)
     print("successfully built homogenous dataset and dumped pickled file at" + f"data/{name}.pickle")
-    return dataset
+    print(new_dataset)
+    # return dataset
 
 
 

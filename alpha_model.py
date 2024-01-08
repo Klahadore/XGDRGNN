@@ -1,6 +1,7 @@
 import torch
 import pickle
 from torch_geometric.loader import LinkNeighborLoader
+from torch_geometric.nn import norm
 from visualize import visualize_emb
 # from data import new_train_dataset, train_dataset
 from HGATConv import SimpleHGATConv
@@ -22,10 +23,12 @@ class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 4, metadata, 64, concat=True, residual=True)
+        self.enc1_bn = norm.BatchNorm(hidden_channels * 4)
         self.enc2 = SimpleHGATConv(hidden_channels * 4, hidden_channels * 4, 4, metadata, 64, concat=False, residual=True)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
         x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
+        x = self.enc1_bn(x)
         x = self.enc2(x, edge_index, node_type, edge_attr, edge_type)
         return x
 
@@ -34,19 +37,21 @@ class EdgeDecoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.lin1 = Linear(2 * hidden_channels, hidden_channels)
+        self.lin1_bn = norm.BatchNorm(hidden_channels)
         self.lin2 = Linear(hidden_channels, 1)
 
     def forward(self, z, edge_label_index):
         row, col = edge_label_index
 
         z = torch.cat([z[row], z[col]], dim=-1)
-        z = self.lin1(z).relu()
+        z = self.lin1(z)
+        z = self.lin1_bn(z).relu()
         z = self.lin2(z)
         return z.view(-1)
 
 
 class Model(torch.nn.Module):
-    def __init__(self, hidden_channels):
+    def __init__(self, hidden_channels, training=False):
         super().__init__()
         self.encoder = EdgeEncoder(hidden_channels)
         self.decoder = EdgeDecoder(hidden_channels*4)
@@ -71,8 +76,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 if __name__ == "__main__":
 
-    model = Model(384).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
+    model = Model(384, training=True).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001)
 
     data_loader = LinkNeighborLoader(
         new_train_dataset,

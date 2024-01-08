@@ -6,7 +6,7 @@ from torch_geometric.nn.dense.linear import Linear, HeteroLinear
 
 
 class SimpleHGATConv(MessagePassing):
-    def __init__(self, in_channels, out_channels, num_heads, metadata, edge_dim, concat=False, residual=False, dropout=.1):
+    def __init__(self, in_channels, out_channels, num_heads, metadata, edge_dim, concat=False, residual=False, return_attention=False, dropout=0.1):
         super(SimpleHGATConv, self).__init__(node_dim=0, aggr='add')
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -36,7 +36,7 @@ class SimpleHGATConv(MessagePassing):
 
         edge_type_emb = self.edge_lin(edge_type_emb, edge_type)
 
-        out = self.propagate(edge_index, x=x, edge_type_emb=edge_type_emb)
+        out, _ = self.propagate(edge_index, x=x, edge_type_emb=edge_type_emb)
 
         # Concatenate or average the outputs from the different heads
         if self.concat and self.residual:
@@ -60,5 +60,5 @@ class SimpleHGATConv(MessagePassing):
         alpha = softmax(alpha, index)
         alpha = F.dropout(alpha, p=self.dropout, training=True)
         
-        return x_j.unsqueeze(-2) * alpha.unsqueeze(-1)
+        return x_j.unsqueeze(-2) * alpha.unsqueeze(-1), alpha
 
