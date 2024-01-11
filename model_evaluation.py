@@ -1,62 +1,56 @@
 import torch
 import numpy as np
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, f1_score
 import pickle
+from torch_geometric.loader import LinkNeighborLoader
 
 from visualize import visualize_graph, visualize_emb
 
 from alpha_model import Model
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+with open("data/new_test_dataset.pickle", 'rb') as file:
+    test_data = pickle.load(file)
 
-
-
-
-
-new_val_dataset = None
-with open("data/new_train_dataset.pickle", 'rb') as file:
-    new_val_dataset = pickle.load(file)
-    print("loaded val dataset")
-
-
-
-
-
-
-
-@torch.no_grad()
-def model_ROC_AUC(model_pred, model_label):
-    model_pred = model_pred.cpu().numpy()
-    model_label = model_label.cpu().numpy()
-    return roc_auc_score(model_label, model_pred)
-
-
-
-model = Model(384).cuda()
-
-net = torch.load("cheese_epoch2_2.pt")
-model.load_state_dict(net)
-
+model = Model(384, training=False)
+model.load_state_dict(torch.load('cheeese_epoch2_3.pt'))
 model.eval()
 
 data_loader = LinkNeighborLoader(
-    new_val_dataset,
-    num_neighbors=[8,6],
-    batch_size=384,
-    edge_label=new_val_dataset.edge_label,
-    edge_label_index=new_train_dataset.edge_label_index
-
+    test_data,
+    num_neighbors=[25,21],
+    batch_size=128,
+    shuffle=False,
+    edge_label=test_data.edge_label[:test_data.edge_label_index.shape[1]],
+    edge_label_index=test_data.edge_label_index,
+    num_workers=4
 )
+
+all_probs = []
+all_targets = []
 
 
 with torch.no_grad():
-    for batch in data_loader:
-        batch = batch.cuda()
-        pred, _ = model(batch)
+    model.eval()
+
+    for batch_data in data_loader:
+        batch_data = batch_data.to(device)
+
+        pred, _ = model(batch_data)
+
+        probs = torch.sigmoid(pred).cpu().numpy()
+
+        all_probs.extend(probs[:,1])
+        all_targets.extend(batch_data.edge_label[:len(pred)].cpu().numpy())
+
+    all_probs = np.array(all_probs)
+    all_targets = np.array(all_targets)
+
+    fpr, tpr, thresholds = roc_auc_score(all_probs, all_targets)
 
 
-print(pred)
-print(type(model))
+
 
 
 
