@@ -24,14 +24,14 @@ class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 4, metadata, 22, concat=True, residual=True)
-        self.enc1_bn = norm.BatchNorm(hidden_channels * 4)
+    #    self.enc1_bn = norm.BatchNorm(hidden_channels * 4)
         self.enc2 = SimpleHGATConv(hidden_channels * 4, hidden_channels * 4, 4, metadata, 22, concat=False, residual=True)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
         
-        x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
+        x = self.enc1(x, edge_index, node_type, edge_attr, edge_type).relu()
         
-        x = self.enc1_bn(x)
+       # x = self.enc1_bn(x)
         x = self.enc2(x, edge_index, node_type, edge_attr, edge_type)
         return x
 
@@ -40,15 +40,14 @@ class EdgeDecoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.lin1 = Linear(2 * hidden_channels, hidden_channels)
-        self.lin1_bn = norm.BatchNorm(hidden_channels)
+       # self.lin1_bn = norm.BatchNorm(hidden_channels)
         self.lin2 = Linear(hidden_channels, 1)
 
     def forward(self, z, edge_label_index):
         row, col = edge_label_index
 
         z = torch.cat([z[row], z[col]], dim=-1)
-        z = self.lin1(z)
-        z = self.lin1_bn(z).relu()
+        z = self.lin1(z).relu()
         z = self.lin2(z)
         return z.view(-1)
 
@@ -79,12 +78,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if __name__ == "__main__":
 
     model = Model(384, training=True).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005)
 
     data_loader = LinkNeighborLoader(
         new_train_dataset,
-        num_neighbors = [25, 21],
-        batch_size=128,
+        num_neighbors = [32, 24],
+        batch_size=384,
         shuffle=True,
         edge_label=new_train_dataset.edge_label[:new_train_dataset.edge_label_index.shape[1]],
         edge_label_index=new_train_dataset.edge_label_index,
@@ -103,6 +102,8 @@ if __name__ == "__main__":
                 optimizer.zero_grad()
                 pred, _ = model(batch_data)
                 target = batch_data.edge_label[:len(pred)]
+#                print(pred)
+ #               print(target)
                 loss = nn.BCEWithLogitsLoss()(pred, target.float())
 
             scaler.scale(loss).backward()

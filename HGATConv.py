@@ -19,7 +19,7 @@ class SimpleHGATConv(MessagePassing):
         self.edge_dim = edge_dim
 
         self.node_lin = HeteroLinear(in_channels, out_channels, len(metadata[0]))
-        self.edge_lin = HeteroLinear(edge_dim, edge_dim, len(metadata[1]))
+        self.edge_lin = Linear(edge_dim, edge_dim)
 
         self.att = Linear(2 * in_channels + edge_dim, self.num_heads, bias=False)
 
@@ -34,7 +34,7 @@ class SimpleHGATConv(MessagePassing):
 
         x = self.node_lin(x, node_type)
 
-        edge_type_emb = self.edge_lin(edge_type_emb, edge_type)
+        edge_type_emb = self.edge_lin(edge_type_emb)
 
         out = self.propagate(edge_index, x=x, edge_type_emb=edge_type_emb)
 
@@ -58,7 +58,7 @@ class SimpleHGATConv(MessagePassing):
         alpha = self.att(alpha)
         alpha = F.leaky_relu(alpha, .2)
         alpha = softmax(alpha, index)
-        alpha = F.dropout(alpha, p=self.dropout, training=True)
+        
         
         return x_j.unsqueeze(-2) * alpha.unsqueeze(-1)
 
