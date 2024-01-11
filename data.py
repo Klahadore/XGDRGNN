@@ -253,6 +253,18 @@ train_dataset, val_dataset, test_dataset = transform(dataset)
 del dataset
 # del val_dataset
 # del test_dataset
+
+with open("temp_val.pickle", 'wb') as file:
+    pickle.dump(val_dataset, file)
+
+
+with open("temp_test.pickle", 'wb') as file:
+    pickle.dump(test_dataset, file)
+
+del val_dataset
+del test_dataset
+
+
 def build_edge_attr(het_dataset, edge_type, edge_type_mapping):
     arr = []
     for i in het_dataset.metadata()[1]:
@@ -268,8 +280,8 @@ def build_edge_attr(het_dataset, edge_type, edge_type_mapping):
     pca = PCA(n_components=22)
 
     # Fit PCA on the data and transform the data
-    arr = torch.tensor(pca.fit_transform(arr.numpy()))
-
+    arr = torch.tensor(pca.fit_transform(arr.cpu().numpy()))
+    arr.to(device)
     final_tensor = []
     for i in edge_type.tolist():
         src, middle, dst = edge_type_mapping[i]
@@ -296,7 +308,6 @@ def build_homo_dataset(hetero_dataset, name):
 
     mapping = generate_edge_type_map(hetero_dataset.metadata())
     new_dataset.edge_attr = build_edge_attr(hetero_dataset, new_dataset.edge_type, mapping)
-    print(new_dataset.edge_attr.numpy().shape)
    #  new_dataset.edge_attr = generate_new_edge_attr_tensor(mapping, new_dataset.edge_type, hetero_dataset)
 
     with open(f"data/{name}.pickle", 'wb') as file:
@@ -315,24 +326,38 @@ if not os.path.exists("data/train_dataset_metadata.pickle"):
 
 
 if not os.path.exists("data/new_train_dataset.pickle"):
+    train_dataset = T.ToDevice(device)(train_dataset)
     build_homo_dataset(train_dataset, "new_train_dataset")
     print("built new_train_dataset")
+    del train_dataset
 # del train_dataset
 # with open("data/new_train_dataset.pickle", "rb") as file:
 #     new_train_dataset = pickle.load(file)
 #     print("loaded new_train_dataset")
 #
+if not os.path.exists("data/new_test_dataset.pickle"):
+    with open("temp_test.pickle", 'rb') as file:
+        test_dataset = pickle.load(file)
+    test_dataset = T.ToDevice(device)(test_dataset)
+    build_homo_dataset(test_dataset, "new_test_dataset")
+    print("built new_test_dataset")
+    del test_dataset
+
 if not os.path.exists("data/new_val_dataset.pickle"):
+    with open("temp_val.pickle", 'rb') as file:
+        val_dataset = pickle.load(file)
+    
+    val_dataset = T.ToDevice(device)(val_dataset)
     build_homo_dataset(val_dataset, "new_val_dataset")
+    
+    del val_dataset
+
     print("built new_val_dataset")
-del val_dataset
+
 # with open("data/new_val_dataset.pickle", 'rb') as file:
 #     new_val_dataset = pickle.load(file)
 #     print("loaded new_val_dataset")
 
-if not os.path.exists("data/new_test_dataset.pickle"):
-    build_homo_dataset(test_dataset, "new_test_dataset")
-    print("built new_test_dataset")
 # with open("data/new_test_dataset.pickle", 'rb') as file:
 #     new_test_dataset = pickle.load(file)
 #     print("loaded new_test_dataset")

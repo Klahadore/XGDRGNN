@@ -36,7 +36,7 @@ class SimpleHGATConv(MessagePassing):
 
         edge_type_emb = self.edge_lin(edge_type_emb, edge_type)
 
-        out, _ = self.propagate(edge_index, x=x, edge_type_emb=edge_type_emb)
+        out = self.propagate(edge_index, x=x, edge_type_emb=edge_type_emb)
 
         # Concatenate or average the outputs from the different heads
         if self.concat and self.residual:
@@ -60,5 +60,5 @@ class SimpleHGATConv(MessagePassing):
         alpha = softmax(alpha, index)
         alpha = F.dropout(alpha, p=self.dropout, training=True)
         
-        return x_j.unsqueeze(-2) * alpha.unsqueeze(-1), alpha
+        return x_j.unsqueeze(-2) * alpha.unsqueeze(-1)
 
