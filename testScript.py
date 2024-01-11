@@ -5,6 +5,7 @@ import requests
 import torch_geometric
 # from torch_geometric.loader import ClusterData, ClusterLoader, NeighborLoader, LinkNeighborLoader
 import json
+from alpha_model import Model
 # print(torch_geometric.typing.WITH_PYG_LIB)
 # torch.manual_seed(69)
 # print(new_train_dataset)
@@ -61,6 +62,7 @@ import json
 
 
 
-with open('data/new_train_dataset.pickle', 'rb') as file:
-    new_train_dataset = pickle.load(file)
-    print(new_train_dataset)
+with open('data/new_test_dataset.pickle', 'rb') as file:
+    new_test_dataset = pickle.load(file)
+    
+
