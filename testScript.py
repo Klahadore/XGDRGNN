@@ -5,7 +5,7 @@ import requests
 import torch_geometric
 # from torch_geometric.loader import ClusterData, ClusterLoader, NeighborLoader, LinkNeighborLoader
 import json
-from alpha_model import Model
+# from alpha_model import Model
 # print(torch_geometric.typing.WITH_PYG_LIB)
 # torch.manual_seed(69)
 # print(new_train_dataset)
@@ -64,5 +64,12 @@ from alpha_model import Model
 
 with open('data/new_test_dataset.pickle', 'rb') as file:
     new_test_dataset = pickle.load(file)
-    
 
+
+print(new_test_dataset)
+print(new_test_dataset.edge_index)
+print(new_test_dataset.edge_label_index)
+print(new_test_dataset.edge_label)
+for i in range(new_test_dataset.edge_index.shape[1]):
+    if new_test_dataset.edge_index[0][i] == 5634:
+        print(new_test_dataset.edge_index[1][i])

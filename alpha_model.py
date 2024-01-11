@@ -24,14 +24,14 @@ class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 4, metadata, 22, concat=True, residual=True)
-        self.enc1_bn = norm.BatchNorm(hidden_channels * 4)
+    #    self.enc1_bn = norm.BatchNorm(hidden_channels * 4)
         self.enc2 = SimpleHGATConv(hidden_channels * 4, hidden_channels * 4, 4, metadata, 22, concat=False, residual=True)
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
         
-        x = self.enc1(x, edge_index, node_type, edge_attr, edge_type)
+        x = self.enc1(x, edge_index, node_type, edge_attr, edge_type).relu()
         
-        x = self.enc1_bn(x)
+       # x = self.enc1_bn(x)
         x = self.enc2(x, edge_index, node_type, edge_attr, edge_type)
         return x
 
@@ -40,15 +40,14 @@ class EdgeDecoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
         self.lin1 = Linear(2 * hidden_channels, hidden_channels)
-        self.lin1_bn = norm.BatchNorm(hidden_channels)
+
         self.lin2 = Linear(hidden_channels, 1)
 
     def forward(self, z, edge_label_index):
         row, col = edge_label_index
 
         z = torch.cat([z[row], z[col]], dim=-1)
-        z = self.lin1(z)
-        z = self.lin1_bn(z).relu()
+        z = self.lin1(z).relu()
         z = self.lin2(z)
         return z.view(-1)
 
@@ -99,17 +98,21 @@ if __name__ == "__main__":
         for batch_data in loader:
             batch_data = batch_data.to(device)
 
-            with torch.cuda.amp.autocast():
-                optimizer.zero_grad()
-                pred, _ = model(batch_data)
-                target = batch_data.edge_label[:len(pred)]
-                loss = nn.BCEWithLogitsLoss()(pred, target.float())
 
-            scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            scaler.step(optimizer)
-            scaler.update()
+            optimizer.zero_grad()
+            pred, _ = model(batch_data)
+            target = batch_data.edge_label[:len(pred)]
+            print(pred)
+            print(target)
+            loss = nn.BCEWithLogitsLoss()(pred, target.float())
+
+            optimizer.zero_grad()
+            loss.backward()
+            # update weights
+            optimizer.step()
+           #  torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+
+
             print(loss.item())
             
             total_loss += float(loss) * pred.numel()
@@ -117,22 +120,22 @@ if __name__ == "__main__":
 
         return total_loss / total_examples
 
-    with torch.cuda.amp.autocast():
-        for epoch in range(8):
-            epoch_loss = train(data_loader)
-            print(f"Epoch {epoch}: Loss {epoch_loss}")
-            if epoch == 1:
-                torch.save(model.state_dict(), "cheese_epoch2_3.pt")
-                print("epoch 2 saved")
-            if epoch == 3:
-                torch.save(model.state_dict(), "cheese_epoch4_3.pt")
-                print("epoch 4 saved")
-            if epoch == 5:
-                torch.save(model.state_dict(), "cheese_epoch6_3.pt")
-                print("epoch 6 saved")
-            if epoch == 7:
-                torch.save(model.state_dict(), "cheese_epoch8_3.pt")
-                print("epoch 8 saved")
+
+    for epoch in range(8):
+        epoch_loss = train(data_loader)
+        print(f"Epoch {epoch}: Loss {epoch_loss}")
+        if epoch == 1:
+            torch.save(model.state_dict(), "cheese_epoch2_3.pt")
+            print("epoch 2 saved")
+        if epoch == 3:
+            torch.save(model.state_dict(), "cheese_epoch4_3.pt")
+            print("epoch 4 saved")
+        if epoch == 5:
+            torch.save(model.state_dict(), "cheese_epoch6_3.pt")
+            print("epoch 6 saved")
+        if epoch == 7:
+            torch.save(model.state_dict(), "cheese_epoch8_3.pt")
+            print("epoch 8 saved")
 
     print("done")
 
