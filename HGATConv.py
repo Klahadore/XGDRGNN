@@ -34,7 +34,7 @@ class SimpleHGATConv(MessagePassing):
 
         x = self.node_lin(x, node_type)
 
-        edge_type_emb = self.edge_lin(edge_type_emb, edge_type)
+        edge_type_emb = self.edge_lin(edge_type_emb)
 
         out = self.propagate(edge_index, x=x, edge_type_emb=edge_type_emb)
 
@@ -58,6 +58,8 @@ class SimpleHGATConv(MessagePassing):
         alpha = self.att(alpha)
         alpha = F.leaky_relu(alpha, .2)
         alpha = softmax(alpha, index)
+
+
 
         
         return x_j.unsqueeze(-2) * alpha.unsqueeze(-1)

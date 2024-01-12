@@ -78,12 +78,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if __name__ == "__main__":
 
     model = Model(384, training=True).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005)
 
     data_loader = LinkNeighborLoader(
         new_train_dataset,
-        num_neighbors = [25, 21],
-        batch_size=128,
+        num_neighbors = [32, 24],
+        batch_size=384,
         shuffle=True,
         edge_label=new_train_dataset.edge_label[:new_train_dataset.edge_label_index.shape[1]],
         edge_label_index=new_train_dataset.edge_label_index,
@@ -111,7 +111,6 @@ if __name__ == "__main__":
             # update weights
             optimizer.step()
            #  torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-
 
             print(loss.item())
             
