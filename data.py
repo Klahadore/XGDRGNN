@@ -249,7 +249,8 @@ transform = T.RandomLinkSplit(
 
 )
 train_dataset, val_dataset, test_dataset = transform(dataset)
-
+print(dataset)
+print(train_dataset)
 del dataset
 # del val_dataset
 # del test_dataset

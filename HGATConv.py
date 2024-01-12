@@ -58,7 +58,9 @@ class SimpleHGATConv(MessagePassing):
         alpha = self.att(alpha)
         alpha = F.leaky_relu(alpha, .2)
         alpha = softmax(alpha, index)
-        
+
+
+
         
         return x_j.unsqueeze(-2) * alpha.unsqueeze(-1)
 
