@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import torch
 from sklearn.manifold import TSNE
-
+from torch_geometric.loader import LinkNeighborLoader
+import pickle
+from alpha_model import Model
 
 @torch.no_grad()
 def visualize_graph(data):
@@ -54,3 +56,22 @@ def visualize_emb(gene_embeddings, disease_embeddings):
     plt.ylabel('TSNE Component 2')
     plt.title('Gene and Disease Embeddings Visualization')
     plt.show()
+
+if __name__ == "__main__":
+    model = Model(384, training=False)
+    model.load_state_dict(torch.load('alphaModel_2_epochs.pt', map_location=torch.device('cpu')))
+
+    test_data = pickle.load(open("data/new_test_dataset.pickle", 'rb'))
+    data_loader = LinkNeighborLoader(
+        test_data,
+        num_neighbors=[25, 21],
+        batch_size=128,
+        shuffle=False,
+        edge_label=test_data.edge_label[:test_data.edge_label_index.shape[1]],
+        edge_label_index=test_data.edge_label_index,
+        num_workers=4
+    )
+    model.eval()
+    for batch in data_loader:
+        pred, z = model(batch)
+        print(z)
