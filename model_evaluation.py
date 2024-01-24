@@ -14,7 +14,7 @@ with open("data/new_test_dataset.pickle", 'rb') as file:
     test_data = pickle.load(file)
 
 model = Model(384, training=False)
-model.load_state_dict(torch.load('cheeese_epoch2_3.pt'))
+model.load_state_dict(torch.load('alphaModel_2_epochs.pt'))
 model.eval()
 
 data_loader = LinkNeighborLoader(

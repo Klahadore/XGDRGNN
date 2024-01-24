@@ -3,7 +3,6 @@ from torch import nn
 import pickle
 from torch_geometric.loader import LinkNeighborLoader
 from torch_geometric.nn import norm
-from visualize import visualize_emb
 # from data import new_train_dataset, train_dataset
 from HGATConv import SimpleHGATConv
 from torch_geometric.nn import Linear

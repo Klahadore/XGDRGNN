@@ -1,13 +1,13 @@
 import torch
 from torch_geometric.nn import Linear, to_hetero, SAGEConv, summary
 
-from torch_geometric.data import HeteroData
-import torch.nn.functional as F
-
-from torch_geometric.utils import remove_self_loops, contains_self_loops
-from sklearn.metrics import roc_auc_score
-from visualize import visualize_graph, visualize_emb
-import torch_geometric.transforms as T
+# from torch_geometric.data import HeteroData
+# import torch.nn.functional as F
+#
+# from torch_geometric.utils import remove_self_loops, contains_self_loops
+# from sklearn.metrics import roc_auc_score
+# from visualize import visualize_graph, visualize_emb
+# import torch_geometric.transforms as T
 
 # from data import train_dataset, test_dataset, val_dataset
 
