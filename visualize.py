@@ -26,10 +26,6 @@ def visualize_graph(data):
     plt.show()
 
 
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-import torch
-
 @torch.no_grad()
 def visualize_emb(gene_embeddings, disease_embeddings):
     # Concatenate gene and disease embeddings
@@ -44,13 +40,17 @@ def visualize_emb(gene_embeddings, disease_embeddings):
 
     # Plot gene embeddings
     num_genes = gene_embeddings.shape[0]
-    plt.scatter(embeddings_2d[:num_genes, 0], embeddings_2d[:num_genes, 1], label='gene')
+    plt.scatter(
+        embeddings_2d[:num_genes, 0], embeddings_2d[:num_genes, 1], label="gene"
+    )
 
     # Plot disease embeddings
-    plt.scatter(embeddings_2d[num_genes:, 0], embeddings_2d[num_genes:, 1], label='disease')
+    plt.scatter(
+        embeddings_2d[num_genes:, 0], embeddings_2d[num_genes:, 1], label="disease"
+    )
 
     plt.legend()
-    plt.xlabel('TSNE Component 1')
-    plt.ylabel('TSNE Component 2')
-    plt.title('Gene and Disease Embeddings Visualization')
+    plt.xlabel("TSNE Component 1")
+    plt.ylabel("TSNE Component 2")
+    plt.title("Gene and Disease Embeddings Visualization")
     plt.show()
