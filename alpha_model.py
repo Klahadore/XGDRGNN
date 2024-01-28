@@ -3,6 +3,7 @@ from torch import nn
 import pickle
 from torch_geometric.loader import LinkNeighborLoader
 from torch_geometric.nn import norm
+
 # from data import new_train_dataset, train_dataset
 from HGATConv import SimpleHGATConv
 from torch_geometric.nn import Linear
@@ -12,25 +13,41 @@ with open("data/train_dataset_metadata.pickle", "rb") as file:
     metadata = pickle.load(file)
     print("loaded metadata")
 
-new_train_dataset = None
-with open("data/new_train_dataset.pickle", "rb") as file:
-    new_train_dataset = pickle.load(file)
-    print("loaded new_train_dataset")
-    print(new_train_dataset)
+# new_train_dataset = None
+# with open("data/new_train_dataset.pickle", "rb") as file:
+#   new_train_dataset = pickle.load(file)
+#  print("loaded new_train_dataset")
+#    print(new_train_dataset)
 torch.manual_seed(42)
+
 
 class EdgeEncoder(torch.nn.Module):
     def __init__(self, hidden_channels):
         super().__init__()
-        self.enc1 = SimpleHGATConv(hidden_channels, hidden_channels, 4, metadata, 22, concat=True, residual=True)
-    #    self.enc1_bn = norm.BatchNorm(hidden_channels * 4)
-        self.enc2 = SimpleHGATConv(hidden_channels * 4, hidden_channels * 4, 4, metadata, 22, concat=False, residual=True)
+        self.enc1 = SimpleHGATConv(
+            hidden_channels,
+            hidden_channels,
+            4,
+            metadata,
+            22,
+            concat=True,
+            residual=True,
+        )
+        #    self.enc1_bn = norm.BatchNorm(hidden_channels * 4)
+        self.enc2 = SimpleHGATConv(
+            hidden_channels * 4,
+            hidden_channels * 4,
+            4,
+            metadata,
+            22,
+            concat=False,
+            residual=True,
+        )
 
     def forward(self, x, edge_index, node_type, edge_attr, edge_type):
-        
         x = self.enc1(x, edge_index, node_type, edge_attr, edge_type).relu()
-        
-       # x = self.enc1_bn(x)
+
+        # x = self.enc1_bn(x)
         x = self.enc2(x, edge_index, node_type, edge_attr, edge_type)
         return x
 
@@ -55,7 +72,7 @@ class Model(torch.nn.Module):
     def __init__(self, hidden_channels, training=False):
         super().__init__()
         self.encoder = EdgeEncoder(hidden_channels)
-        self.decoder = EdgeDecoder(hidden_channels*4)
+        self.decoder = EdgeDecoder(hidden_channels * 4)
 
     def forward(self, batch_data):
         x = batch_data.x
@@ -69,25 +86,26 @@ class Model(torch.nn.Module):
         return self.decoder(z, edge_label_index), z
 
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # currently training only works on cuda
 
 if __name__ == "__main__":
-
     model = Model(384, training=True).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005)
 
     data_loader = LinkNeighborLoader(
         new_train_dataset,
-        num_neighbors = [32, 24],
+        num_neighbors=[32, 24],
         batch_size=384,
         shuffle=True,
-        edge_label=new_train_dataset.edge_label[:new_train_dataset.edge_label_index.shape[1]],
+        edge_label=new_train_dataset.edge_label[
+            : new_train_dataset.edge_label_index.shape[1]
+        ],
         edge_label_index=new_train_dataset.edge_label_index,
-        num_workers=4
-        )
+        num_workers=4,
+    )
 
     scaler = torch.cuda.amp.GradScaler()
 
@@ -97,10 +115,9 @@ if __name__ == "__main__":
         for batch_data in loader:
             batch_data = batch_data.to(device)
 
-
             optimizer.zero_grad()
             pred, _ = model(batch_data)
-            target = batch_data.edge_label[:len(pred)]
+            target = batch_data.edge_label[: len(pred)]
             print(pred)
             print(target)
             loss = nn.BCEWithLogitsLoss()(pred, target.float())
@@ -109,15 +126,14 @@ if __name__ == "__main__":
             loss.backward()
             # update weights
             optimizer.step()
-           #  torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            #  torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
             print(loss.item())
-            
+
             total_loss += float(loss) * pred.numel()
             total_examples += pred.numel()
 
         return total_loss / total_examples
-
 
     for epoch in range(8):
         epoch_loss = train(data_loader)
@@ -136,5 +152,3 @@ if __name__ == "__main__":
             print("epoch 8 saved")
 
     print("done")
-
-

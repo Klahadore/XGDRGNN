@@ -6,8 +6,19 @@ from torch_geometric.nn.dense.linear import Linear, HeteroLinear
 
 
 class SimpleHGATConv(MessagePassing):
-    def __init__(self, in_channels, out_channels, num_heads, metadata, edge_dim, concat=False, residual=False, return_attention=False, dropout=0.1):
-        super(SimpleHGATConv, self).__init__(node_dim=0, aggr='add')
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        num_heads,
+        metadata,
+        edge_dim,
+        concat=False,
+        residual=False,
+        return_attention=False,
+        dropout=0.1,
+    ):
+        super(SimpleHGATConv, self).__init__(node_dim=0, aggr="add")
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.num_heads = num_heads
@@ -31,7 +42,6 @@ class SimpleHGATConv(MessagePassing):
         self.att.reset_parameters()
 
     def forward(self, x, edge_index, node_type, edge_type_emb, edge_type):
-
         x = self.node_lin(x, node_type)
 
         edge_type_emb = self.edge_lin(edge_type_emb)
@@ -54,13 +64,9 @@ class SimpleHGATConv(MessagePassing):
 
     def message(self, x_i, x_j, edge_type_emb, index):
         alpha = torch.cat([x_i, x_j, edge_type_emb], dim=-1)
-        
+
         alpha = self.att(alpha)
-        alpha = F.leaky_relu(alpha, .2)
+        alpha = F.leaky_relu(alpha, 0.2)
         alpha = softmax(alpha, index)
 
-
-
-        
         return x_j.unsqueeze(-2) * alpha.unsqueeze(-1)
-

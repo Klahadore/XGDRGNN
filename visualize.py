@@ -4,7 +4,8 @@ import torch
 from sklearn.manifold import TSNE
 from torch_geometric.loader import LinkNeighborLoader
 import pickle
-from alpha_model import Model
+from alpha_model import Model, metadata
+
 
 @torch.no_grad()
 def visualize_graph(data):
@@ -57,21 +58,74 @@ def visualize_emb(gene_embeddings, disease_embeddings):
     plt.title("Gene and Disease Embeddings Visualization")
     plt.show()
 
-if __name__ == "__main__":
-    model = Model(384, training=False)
-    model.load_state_dict(torch.load('alphaModel_2_epochs.pt', map_location=torch.device('cpu')))
 
-    test_data = pickle.load(open("data/new_test_dataset.pickle", 'rb'))
+@torch.no_grad()
+def visualize_emb_1(embeddings, colors):
+    tsne = TSNE(n_components=2, random_state=69)
+    embeddings_2d = tsne.fit_transform(embeddings.cpu().numpy())
+    print("embeddings len", len(embeddings))
+    plt.figure(figsize=(10, 8))
+
+    num_embeddings = embeddings.shape[0]
+    plt.scatter(
+        embeddings_2d[:num_embeddings, 0],
+        embeddings_2d[:num_embeddings, 1],
+        color="orange",
+    )
+    print("scattered")
+    plt.legend()
+
+    plt.xlabel("TSNE Component 1")
+    plt.ylabel("TSNE Component 2")
+    plt.title("Disease Embeddings")
+    plt.show()
+
+
+if __name__ == "__main__":
+    torch.set_grad_enabled(False)
+    model = Model(384, training=False)
+    model.load_state_dict(torch.load("alphaModel_2_epochs.pt"))
+    print("t")
+    model.cuda()
+    print("loaded model")
+    test_data = pickle.load(open("data/new_test_dataset.pickle", "rb"))
+
     data_loader = LinkNeighborLoader(
         test_data,
-        num_neighbors=[25, 21],
-        batch_size=128,
+        num_neighbors=[30, 21],
+        batch_size=512,
         shuffle=False,
-        edge_label=test_data.edge_label[:test_data.edge_label_index.shape[1]],
+        edge_label=test_data.edge_label[: test_data.edge_label_index.shape[1]],
         edge_label_index=test_data.edge_label_index,
-        num_workers=4
+        num_workers=4,
     )
+
     model.eval()
-    for batch in data_loader:
-        pred, z = model(batch)
-        print(z)
+    map = {}
+    print(metadata)
+    for i in data_loader:
+
+        i.cuda()
+        _, z = model(i)
+        z.cpu()
+        for line in range(len(z)):
+            key = (i.n_id[line], i.node_type[line])
+            if key not in map.keys():
+                map[key] = z[line].cpu()
+            else:
+                pass
+            # map[key] = torch.mean(map[key], z[line]).cpu()
+        print(z.shape)
+
+        break
+
+    genes = []
+    # makes tensor of genes and diseases
+    for i in map.keys():
+        index, node_type = i
+        if node_type == 2:
+            genes.append(map[i])
+
+    genes = torch.stack(genes)
+    visualize_emb_1(genes, "blue")
+# print(map)
